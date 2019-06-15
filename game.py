@@ -74,3 +74,12 @@ def is_pointcard(card: str) -> bool:
         return False
     else:  # If not a Joker, all cards ending with an alphabet are point cards. (Because 10 is also X)
         return card[1].isalpha()
+
+
+def unicode_card(card: str) -> str:
+    unicode_cards = '🂡🂢🂣🂤🂥🂦🂧🂨🂩🂪🂫🂭🂮🃁🃂🃃🃄🃅🃆🃇🃈🃉🃊🃋🃍🃎🂱🂲🂳🂴🂵🂶🂷🂸🂹🂺🂻🂽🂾🃑🃒🃓🃔🃕🃖🃗🃘🃙🃚🃛🃝🃞🃏'
+    return unicode_cards[cards.index(card)]
+
+
+def print_card(card: str) -> None:
+    print(unicode_card(card))
