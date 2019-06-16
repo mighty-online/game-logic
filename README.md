@@ -5,7 +5,7 @@ Detailed explanation of functions and variables are done right in the code using
 
 Terminology and the standard data structures for game constructs are specified below.
 
-#### Terminology
+### Terminology
 Ambiguous terminology are defined as below.
  - **Suit & Rank**: _Spades, Diamonds, Hearts_ and _Clubs_ are suits. _Ace, 2, 3, 4, ..., 10, J, Q, K_ are ranks.
  
@@ -29,7 +29,7 @@ Ambiguous terminology are defined as below.
  - **Perspective**: All information a player in the game can obtain.
  
  
-#### Standard Data Structures for Game Constructs
+### Standard Data Structures for Game Constructs
 
 When unspecified in code, the below are the expected formats in which game constructs will be implemented.
 
