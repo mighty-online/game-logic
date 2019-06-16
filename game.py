@@ -99,4 +99,4 @@ def deal_deck() -> list:
     # creates the kitty
     hands.append(deck[50:])
 
-    return hands
+    return hands  # will contain 5 hands plus the kitty
