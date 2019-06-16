@@ -1,5 +1,7 @@
 """The game logic module of Mighty, built for the Mighty-Online project."""
 
+import random
+
 __author__ = "Jake Hyun (SyphonArch)"
 __copyright__ = "Copyright 2019, The Mighty-Online Team"
 __credits__ = ["Jake Hyun (SyphonArch)"]
@@ -86,4 +88,15 @@ def print_card(card: str) -> None:
 
 def deal_deck() -> list:
     """Randomly shuffles and deals the deck to 5 players and the kitty"""
-    raise NotImplementedError
+    hands = []
+    deck = cards[:]
+    random.shuffle(deck)
+
+    # creates the hand of each player
+    for p in range(5):
+        hands.append(deck[10 * p: 10 * p + 10])
+
+    # creates the kitty
+    hands.append(deck[50:])
+
+    return hands
