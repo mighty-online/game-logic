@@ -25,14 +25,12 @@ cards = ['SA', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'SX', 'SJ', 'SQ',
 
 # Player number is a value in range(5)
 def next_player(prev_player: int) -> int:
-    """Returns the number of the next player, given the previous player's number.
-    """
+    """Returns the number of the next player, given the previous player's number"""
     return (prev_player + 1) % 5
 
 
 def trick_winner(trick: list, trump: str) -> int:
-    """Returns the winner of the trick, given the trick and the trump suit
-    """
+    """Returns the winner of the trick, given the trick and the trump suit"""
     try:
         assert len(trick[0]) == 2
         assert type(trick[0][0]) == int
@@ -68,8 +66,7 @@ def trick_winner(trick: list, trump: str) -> int:
 
 
 def is_pointcard(card: str) -> bool:
-    """Returns whether the given card is a point card
-    """
+    """Returns whether the given card is a point card"""
     if card == joker:
         return False
     else:  # If not a Joker, all cards ending with an alphabet are point cards. (Because 10 is also X)
@@ -77,9 +74,16 @@ def is_pointcard(card: str) -> bool:
 
 
 def unicode_card(card: str) -> str:
+    """Converts standard card representation to unicode representation"""
     unicode_cards = '🂡🂢🂣🂤🂥🂦🂧🂨🂩🂪🂫🂭🂮🃁🃂🃃🃄🃅🃆🃇🃈🃉🃊🃋🃍🃎🂱🂲🂳🂴🂵🂶🂷🂸🂹🂺🂻🂽🂾🃑🃒🃓🃔🃕🃖🃗🃘🃙🃚🃛🃝🃞🃏'
     return unicode_cards[cards.index(card)]
 
 
 def print_card(card: str) -> None:
+    """Prints out the unicode representation of the given card to console"""
     print(unicode_card(card))
+
+
+def deal_deck() -> list:
+    """Randomly shuffles and deals the deck to 5 players and the kitty"""
+    raise NotImplementedError
