@@ -25,6 +25,110 @@ cards = ['SA', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'SX', 'SJ', 'SQ',
          'CA', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'CX', 'CJ', 'CQ', 'CK'] + [joker]
 
 
+class GameEngine:
+    """The class to wrap all the data manipulation and processes for a game"""
+
+    def __init__(self):
+        self.hands, self.kitty = deal_deck()
+        self.points = [[] for _ in range(5)]
+
+        self.state = [self.hands, self.points]
+
+        self.tricks = []
+
+        # Declarer, trump, bid, [friend, friend card]
+        self.setup = [None, None, None, [None, None]]
+
+        self.game = [self.state, self.tricks, self.setup]
+
+        self.next_bidder = None
+        self.lowerbound = 13
+        self.highestbid = None
+        self.bids = [None, None, None, None, None]
+
+        # Stores what call type should come next
+        self.next_call = 'bid'  # 'bid', 'exchange', 'friend call', 'redeal'
+
+    def proceed(self, call):
+        """Automatically runs the appropriate method to proceed the game"""
+        raise NotImplementedError
+
+    def bidding(self, bidder: int, trump: str, bid: int) -> int:
+        """
+        Processes the bidding phase, one bid per call
+
+        Returns 0 on a valid bid.
+
+        Returns 1 on invalid call.
+        Returns 2 on invalid bidder.
+        Returns 3 on invalid trump
+        Returns 4 on invalid bid.
+
+        Bids are saved in self.bids in player order. Each bid is a tuple of (trump, bid).
+        A pass is marked by a 0.
+        """
+
+        if self.setup[0] is not None:
+            return 1
+
+        if self.next_bidder:  # Checks if the bidder is valid (i.e. is the expected one)
+            if self.next_bidder != bidder:
+                return 2
+        else:  # If it is the first bid made, sets the next bidder as the bidder given in argument
+            if bidder in range(5):
+                self.next_bidder = bidder
+            else:
+                return 2
+
+        if bid == 0:
+            self.bids[bidder] = 0
+        else:
+            if trump == 'N':
+                no_trump = 1
+            else:
+                if trump not in suits:
+                    return 3
+                no_trump = 0
+
+            if self.highestbid:  # If there exists a previous bid,
+                if self.highestbid >= bid + no_trump:
+                    return 4
+            if bid < self.lowerbound:
+                return 4
+
+            self.bids[bidder] = (trump, bid)
+            self.highestbid = bid
+
+        if all([b is not None for b in self.bids]):  # If everyone has passed or made a bid
+            no_pass_player_count = 0
+            declarer_candidate = None
+            for player in range(len(self.bids)):
+                if self.bids[player]:
+                    declarer_candidate = player
+                    no_pass_player_count += 1
+
+            if no_pass_player_count == 0:  # Everyone has passed
+                if self.lowerbound == 13:
+                    self.lowerbound -= 1
+                else:  # If everyone passes even with 12 as the lowerbound, there should be a redeal
+                    self.next_call = 'redeal'
+                    return 0
+
+            if no_pass_player_count == 1:  # Bidding has ended.
+                self.setup[0] = declarer_candidate  # declarer is set
+                self.setup[1], self.setup[2] = self.bids[declarer_candidate]
+                self.next_call = 'exchange'
+                return 0
+
+        # The loop below finds the next bidder, ignoring players who passed
+        while True:
+            self.next_bidder = next_player(self.next_bidder)
+            if self.bids[self.next_bidder] != 0:
+                break
+
+        return 0
+
+
 # Player number is a value in range(5)
 def next_player(prev_player: int) -> int:
     """Returns the number of the next player, given the previous player's number"""
@@ -86,7 +190,7 @@ def print_card(card: str) -> None:
     print(unicode_card(card))
 
 
-def deal_deck() -> list:
+def deal_deck() -> tuple:
     """Randomly shuffles and deals the deck to 5 players and the kitty"""
     hands = []
     deck = cards[:]
@@ -97,6 +201,6 @@ def deal_deck() -> list:
         hands.append(deck[10 * p: 10 * p + 10])
 
     # creates the kitty
-    hands.append(deck[50:])
+    kitty = deck[50:]
 
-    return hands  # will contain 5 hands plus the kitty
+    return hands, kitty  # will contain 5 hands plus the kitty

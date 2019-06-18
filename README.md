@@ -15,6 +15,8 @@ Ambiguous terminology are defined as below.
  
  - **Trump**: The suit elevated above all others in a game of Mighty.
  
+ - **Declarer**: The one who makes the highest bid.
+ 
  - **Joker Call**: The card which can force the Joker to be played if led in a trick.
  
  - **Hand**: The cards held by one player.
@@ -42,6 +44,7 @@ When unspecified in code, the below are the expected formats in which game const
      Example: `'H3'` or `'JK'`. 
      
      _Note that an active Joker Call is denoted as `'JC'`._
+     
  - **Bid**: An integer less or equal to 20.
  
     Example: `14`
@@ -51,6 +54,8 @@ When unspecified in code, the below are the expected formats in which game const
     Example: `'S'`, `'H'`
     
     _Note: both the trump suit and suit led are instances of suits, thus also single characters_
+    
+    _A 'no-trump' is denoted as `'N'`_
     
  - **Play**: A tuple or list of length 2, consisting of the player who made the move, and the card played.
  
@@ -68,15 +73,17 @@ When unspecified in code, the below are the expected formats in which game const
  
  - **Hands**: A list of 'hand's, in player order. Is a 2D nested list. May contain the kitty.
  
-    Example: `[hand0, hand1, hand2, hand3, hand4, kitty]`, where each element of the list is a hand (or the kitty).
+    Example: `[hand0, hand1, hand2, hand3, hand4]`, where each element of the list is a hand.
     
  - **State**: A nested list of the list 'hands', and a list of list of point cards obtained by each player.
  
     Example: `[[hand0, ..., hand4], [points0, ..., points4]]`
     
- - **Setup**: A list containing the trump suit, bid, and friend card.
+ - **Setup**: A list containing the declarer, trump suit, bid, and [friend, friend card] list.
  
-    Example: `['D', 15, 'SA']`
+    Example: `[2, 'D', 15, [3, 'SA']]`, `[2, 'D', 15, [None, 'SA']]` 
+    
+    _Note: Before the friend card is played, the friend should remain as `None`_
     
  - **Game**: A list consisting of state, a list of tricks, and the setup data.
  
