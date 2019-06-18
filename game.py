@@ -42,9 +42,9 @@ class GameEngine:
         self.game = [self.state, self.tricks, self.setup]
 
         self.next_bidder = None
-        self.lowerbound = 13
-        self.highestbid = None
-        self.bids = [None, None, None, None, None]
+        self.lower_bound = 13
+        self.highest_bid = None
+        self.bids = [('', -1) for _ in range(5)]
 
         # Stores what call type should come next
         self.next_call = 'bid'  # 'bid', 'exchange', 'friend call', 'redeal'
@@ -71,7 +71,7 @@ class GameEngine:
         if self.setup[0] is not None:
             return 1
 
-        if self.next_bidder:  # Checks if the bidder is valid (i.e. is the expected one)
+        if self.next_bidder is not None:  # Checks if the bidder is valid (i.e. is the expected one)
             if self.next_bidder != bidder:
                 return 2
         else:  # If it is the first bid made, sets the next bidder as the bidder given in argument
@@ -81,7 +81,7 @@ class GameEngine:
                 return 2
 
         if bid == 0:
-            self.bids[bidder] = 0
+            self.bids[bidder] = ('', 0)
         else:
             if trump == 'N':
                 no_trump = 1
@@ -90,26 +90,27 @@ class GameEngine:
                     return 3
                 no_trump = 0
 
-            if self.highestbid:  # If there exists a previous bid,
-                if self.highestbid >= bid + no_trump:
+            if self.highest_bid:  # If there exists a previous bid,
+                if self.highest_bid >= bid + no_trump:
                     return 4
-            if bid < self.lowerbound:
+            if bid < self.lower_bound:
                 return 4
 
             self.bids[bidder] = (trump, bid)
-            self.highestbid = bid
+            self.highest_bid = bid
 
-        if all([b is not None for b in self.bids]):  # If everyone has passed or made a bid
+        if all([b[1] != -1 for b in self.bids]):  # If everyone has passed or made a bid
             no_pass_player_count = 0
             declarer_candidate = None
             for player in range(len(self.bids)):
-                if self.bids[player]:
+                if self.bids[player][1] > 0:
                     declarer_candidate = player
                     no_pass_player_count += 1
 
             if no_pass_player_count == 0:  # Everyone has passed
-                if self.lowerbound == 13:
-                    self.lowerbound -= 1
+                if self.lower_bound == 13:
+                    self.lower_bound -= 1
+                    self.bids = [('', -1) for _ in range(5)]
                 else:  # If everyone passes even with 12 as the lowerbound, there should be a redeal
                     self.next_call = 'redeal'
                     return 0
@@ -123,7 +124,7 @@ class GameEngine:
         # The loop below finds the next bidder, ignoring players who passed
         while True:
             self.next_bidder = next_player(self.next_bidder)
-            if self.bids[self.next_bidder] != 0:
+            if self.bids[self.next_bidder][1] != 0:
                 break
 
         return 0
