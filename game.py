@@ -29,8 +29,8 @@ uninit = {'player': -1, 'suit': '', 'bid': -1}  # Default uninitialized values.
 # Below block sets the types of valid calls to the GameEngine, and assigns each call type an integer
 _calls = ['bid', 'exchange', 'friend call', 'redeal']
 calltype = {}
-for i in range(1, len(_calls) + 1):
-    calltype[_calls[i]] = i
+for i in range(len(_calls)):
+    calltype[_calls[i]] = i + 1
 
 
 class GameEngine:
