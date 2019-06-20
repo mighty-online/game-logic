@@ -26,11 +26,12 @@ cards = ['SA', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'SX', 'SJ', 'SQ',
 
 uninit = {'player': -1, 'suit': '', 'bid': -1}  # Default uninitialized values.
 
-# Below block sets the types of valid calls to the GameEngine, and assigns each call type an integer
+# The block below sets the types of valid calls to the GameEngine, and assigns them to a dictionary.
+# This way, invalid call types cannot be set without invoking an KeyError.
 _calls = ['bid', 'exchange', 'friend call', 'redeal']
 calltype = {}
-for i in range(len(_calls)):
-    calltype[_calls[i]] = i + 1
+for _call in _calls:
+    calltype[_call] = _call
 
 
 class GameEngine:
