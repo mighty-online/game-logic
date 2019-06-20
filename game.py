@@ -44,7 +44,7 @@ class GameEngine:
         self.next_bidder = None
         self.lower_bound = 13
         self.highest_bid = None
-        self.bids = [('', -1) for _ in range(5)]
+        self.bids = [('', -1) for _ in range(5)]  # This is how bids are initialized
 
         # Stores what call type should come next
         self.next_call = 'bid'  # 'bid', 'exchange', 'friend call', 'redeal'

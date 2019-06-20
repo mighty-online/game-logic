@@ -96,4 +96,9 @@ When unspecified in code, the below are the expected formats in which game const
  - **GameEngine**: A class to deal with the dealing and bidding process, as well as the gameplay.
  
     This is the wrapper object of a game. It will contain the game list specified above, and will act as an API.
+    
+    Detailed usage details are documented below in the 'GameEngine Usage' section.
         
+### GameEngine Usage
+
+To be documented
