@@ -24,11 +24,11 @@ cards = ['SA', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'SX', 'SJ', 'SQ',
          'HA', 'H2', 'H3', 'H4', 'H5', 'H6', 'H7', 'H8', 'H9', 'HX', 'HJ', 'HQ', 'HK',
          'CA', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'CX', 'CJ', 'CQ', 'CK'] + [joker]
 
-uninit = {'player': -1, 'suit': '', 'bid': -1}  # Default uninitialized values.
+uninit = {'player': -1, 'suit': '', 'bid': -1, 'card': ''}  # Default uninitialized values.
 
 # The block below sets the types of valid calls to the GameEngine, and assigns them to a dictionary.
 # This way, invalid call types cannot be set without invoking an KeyError.
-_calls = ['bid', 'exchange', 'friend call', 'redeal']
+_calls = ['bid', 'exchange', 'friend call', 'redeal']  # Not meant to be used directly.
 calltype = {}
 for _call in _calls:
     calltype[_call] = _call
@@ -48,8 +48,10 @@ class GameEngine:
         # Declarer, trump, bid, [friend, friend card]
         self.setup = [uninit['player'], uninit['suit'], uninit['bid'], [uninit['player'], uninit['bid']]]
 
+        # Game variable to store state, tricks and setup.
         self.game = [self.state, self.tricks, self.setup]
 
+        # Bidding related variables.
         self.next_bidder = uninit['player']
         self.lower_bound = 13
         self.highest_bid = uninit['bid']
@@ -119,13 +121,13 @@ class GameEngine:
                 if self.lower_bound == 13:
                     self.lower_bound -= 1
                     self.bids = [(uninit['suit'], uninit['bid']) for _ in range(5)]
-                else:  # If everyone passes even with 12 as the lowerbound, there should be a redeal.
+                else:  # If everyone passes even with 12 as the lower bound, there should be a redeal.
                     self.next_call = calltype['redeal']
                     return 0
 
             if no_pass_player_count == 1:  # Bidding has ended.
                 self.setup[0] = declarer_candidate  # Declarer is set.
-                self.setup[1], self.setup[2] = self.bids[declarer_candidate]
+                self.setup[1], self.setup[2] = self.bids[declarer_candidate]  # The bid and trump suit are set
                 self.next_call = calltype['exchange']
                 return 0
 
