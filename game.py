@@ -28,7 +28,8 @@ uninit = {'player': -1, 'suit': '', 'bid': -1, 'card': ''}  # Default uninitiali
 
 # The block below sets the types of valid calls to the GameEngine, and assigns them to a dictionary.
 # This way, invalid call types cannot be set without invoking an KeyError.
-_calls = ['bid', 'exchange', 'friend call', 'redeal']  # Not meant to be used directly.
+_calls = ['deal-miss check', 'bid', 'exchange', 'trump change', 'friend call',
+          'redeal']  # Not meant to be used directly.
 calltype = {}
 for _call in _calls:
     calltype[_call] = _call
@@ -51,6 +52,9 @@ class GameEngine:
         # Game variable to store state, tricks and setup.
         self.game = [self.state, self.tricks, self.setup]
 
+        # Hand confirmation of players. (i.e. no deal-miss)
+        self.hand_confirmed = [False for _ in range(5)]
+
         # Bidding related variables.
         self.next_bidder = uninit['player']
         self.lower_bound = 13
@@ -58,27 +62,51 @@ class GameEngine:
         self.bids = [(uninit['suit'], uninit['bid']) for _ in range(5)]
 
         # Stores what call type should come next
-        self.next_call = calltype['bid']
+        self.next_call = calltype['deal-miss check']
 
     def proceed(self, call: str):
         """Automatically runs the appropriate method to proceed the game."""
         raise NotImplementedError
+
+    def deal_miss_check(self, player: int, deal_miss: bool) -> int:
+        """Given player and whether that player announces a deal-miss, proceeds with the necessary steps.
+
+        Returns 0 on valid call.
+
+        Returns 1 on unexpected call.
+        Returns 2 on invalid player.
+        Returns 3 on invalid deal-miss call.
+        """
+        if player not in range(5):
+            return 1
+
+        if deal_miss:
+            if not is_deal_miss(self.hands[player]):  # fake deal-miss call
+                return 2
+            else:
+                self.next_call = calltype['redeal']
+        else:
+            self.hand_confirmed[player] = True
+            if all(self.hand_confirmed):
+                self.next_call = calltype['bid']
+
+        return 0
 
     def bidding(self, bidder: int, trump: str, bid: int) -> int:
         """Processes the bidding phase, one bid per call.
 
         Returns 0 on a valid bid.
 
-        Returns 1 on invalid call.
+        Returns 1 on unexpected call.
         Returns 2 on invalid bidder.
-        Returns 3 on invalid trump
+        Returns 3 on invalid trump.
         Returns 4 on invalid bid.
 
         Bids are saved in self.bids in player order. Each bid is a tuple of (trump, bid).
         A pass is marked by a 0.
         """
 
-        if self.setup[0] != uninit['player']:
+        if self.next_call != calltype['bid']:
             return 1
 
         if self.next_bidder != uninit['player']:  # Checks if the bidder is valid (i.e. is the expected one)
@@ -127,7 +155,7 @@ class GameEngine:
 
             if no_pass_player_count == 1:  # Bidding has ended.
                 self.setup[0] = declarer_candidate  # Declarer is set.
-                self.setup[1], self.setup[2] = self.bids[declarer_candidate]  # The bid and trump suit are set
+                self.setup[1], self.setup[2] = self.bids[declarer_candidate]  # The trump suit and bid are set
                 self.next_call = calltype['exchange']
                 return 0
 
@@ -139,31 +167,71 @@ class GameEngine:
 
         return 0
 
-    def exchange(self, discarding_cards):
+    def exchange(self, discarding_cards: list) -> int:
         """Given the three cards that the declarer will discard, deals with the exchange process.
 
-        Non-zero return value indicates an error.
+        Returns 0 on a successful call.
+
+        Returns 1 on unexpected call.
+        Returns 2 on invalid discarding_cards list
         """
         if self.next_call != calltype['exchange']:
             return 1
 
-        assert len(discarding_cards) == 3
+        if len(discarding_cards) != 3:
+            return 2
 
         declarer_hand = self.hands[self.setup[0]]
 
-        # Moves the contents of the kitty into the declarer's hand
+        if not all([c in declarer_hand for c in discarding_cards]):
+            return 2
+
+        # Moves the contents of the kitty into the declarer's hand.
         declarer_hand += self.kitty
         self.kitty = []
 
-        assert all([c in declarer_hand for c in discarding_cards])
-
-        # Discards the three cards into the declarer's point card list
+        # Discards the three cards into the declarer's point card list. (if point card)
         for card in discarding_cards:
             declarer_hand.remove(card)
-            self.points[self.setup[0]].append(card)
+            if is_pointcard(card):
+                self.points[self.setup[0]].append(card)
+
+        self.next_call = calltype['trump change']
+        return 0
+
+    def trump_change(self, trump: str) -> int:
+        """Given the trump to change to (or to retain), proceeds with the change.
+
+        Returns 0 on a successful call.
+
+        Returns 1 on unexpected call.
+        Returns 2 on invalid trump.
+        Returns 3 if bid can't be raised.
+        """
+        if self.next_call != calltype['trump change']:
+            return 1
+
+        if trump not in suits + ['N']:
+            return 2
+
+        trump_has_changed = trump != self.setup[1]
+
+        if trump_has_changed:
+            if trump == 'N':
+                bid_increase = 1
+            else:
+                bid_increase = 2
+
+            if self.setup[2] + bid_increase > 20:
+                return 3
+            else:
+                self.setup[2] += bid_increase
 
         self.next_call = calltype['friend call']
         return 0
+
+    def friend_call(self):
+        pass
 
 
 # Player number is a value in range(5)
@@ -241,3 +309,7 @@ def deal_deck() -> tuple:
     kitty = deck[50:]
 
     return hands, kitty  # will contain 5 hands plus the kitty
+
+
+def is_deal_miss(hand: list) -> bool:
+    raise NotImplementedError
