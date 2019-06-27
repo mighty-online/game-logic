@@ -26,17 +26,19 @@ cards = ['SA', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'SX', 'SJ', 'SQ',
 
 uninit = {'player': -1, 'suit': '', 'bid': -1, 'card': ''}  # Default uninitialized values.
 
-# The block below sets the types of valid calls to the GameEngine, and assigns them to a dictionary.
-# This way, invalid call types cannot be set without invoking an KeyError.
-_calls = ['deal-miss check', 'bid', 'exchange', 'trump change', 'friend call',
-          'redeal']  # Not meant to be used directly.
-calltype = {}
-for _call in _calls:
-    calltype[_call] = _call
-
 
 class GameEngine:
     """The class to wrap all the data manipulation and processes for a game."""
+
+    # The block below sets the types of valid calls to the GameEngine, and assigns them to a dictionary.
+    # This way, invalid call types cannot be set without invoking an KeyError.
+    _calls = ['bid', 'deal-miss check', 'exchange', 'trump change', 'friend call',
+              'redeal', 'play']
+    calltype = {}
+    for call in _calls:
+        calltype[call] = call
+
+    del _calls
 
     def __init__(self):
         self.hands, self.kitty = deal_deck()
@@ -47,7 +49,7 @@ class GameEngine:
         self.tricks = []
 
         # Declarer, trump, bid, [friend, friend card]
-        self.setup = [uninit['player'], uninit['suit'], uninit['bid'], [uninit['player'], uninit['bid']]]
+        self.setup = [uninit['player'], uninit['suit'], uninit['bid'], [uninit['player'], uninit['card']]]
 
         # Game variable to store state, tricks and setup.
         self.game = [self.state, self.tricks, self.setup]
@@ -62,40 +64,16 @@ class GameEngine:
         self.bids = [(uninit['suit'], uninit['bid']) for _ in range(5)]
 
         # Stores what call type should come next
-        self.next_call = calltype['deal-miss check']
+        self.next_call = GameEngine.calltype['bid']
 
-    def proceed(self, call: str):
+    def proceed(self, call: str) -> int:
         """Automatically runs the appropriate method to proceed the game."""
         raise NotImplementedError
-
-    def deal_miss_check(self, player: int, deal_miss: bool) -> int:
-        """Given player and whether that player announces a deal-miss, proceeds with the necessary steps.
-
-        Returns 0 on valid call.
-
-        Returns 1 on unexpected call.
-        Returns 2 on invalid player.
-        Returns 3 on invalid deal-miss call.
-        """
-        if player not in range(5):
-            return 1
-
-        if deal_miss:
-            if not is_deal_miss(self.hands[player]):  # fake deal-miss call
-                return 2
-            else:
-                self.next_call = calltype['redeal']
-        else:
-            self.hand_confirmed[player] = True
-            if all(self.hand_confirmed):
-                self.next_call = calltype['bid']
-
-        return 0
 
     def bidding(self, bidder: int, trump: str, bid: int) -> int:
         """Processes the bidding phase, one bid per call.
 
-        Returns 0 on a valid bid.
+        Returns 0 on valid call.
 
         Returns 1 on unexpected call.
         Returns 2 on invalid bidder.
@@ -106,7 +84,7 @@ class GameEngine:
         A pass is marked by a 0.
         """
 
-        if self.next_call != calltype['bid']:
+        if self.next_call != GameEngine.calltype['bid']:
             return 1
 
         if self.next_bidder != uninit['player']:  # Checks if the bidder is valid (i.e. is the expected one)
@@ -150,13 +128,13 @@ class GameEngine:
                     self.lower_bound -= 1
                     self.bids = [(uninit['suit'], uninit['bid']) for _ in range(5)]
                 else:  # If everyone passes even with 12 as the lower bound, there should be a redeal.
-                    self.next_call = calltype['redeal']
+                    self.next_call = GameEngine.calltype['redeal']
                     return 0
 
             if no_pass_player_count == 1:  # Bidding has ended.
                 self.setup[0] = declarer_candidate  # Declarer is set.
                 self.setup[1], self.setup[2] = self.bids[declarer_candidate]  # The trump suit and bid are set
-                self.next_call = calltype['exchange']
+                self.next_call = GameEngine.calltype['deal_miss_check']
                 return 0
 
         # The loop below finds the next bidder, ignoring players who passed.
@@ -167,15 +145,39 @@ class GameEngine:
 
         return 0
 
+    def deal_miss_check(self, player: int, deal_miss: bool) -> int:
+        """Given player and whether that player announces a deal-miss, proceeds with the necessary steps.
+
+        Returns 0 on valid call.
+
+        Returns 1 on unexpected call.
+        Returns 2 on invalid player.
+        Returns 3 on invalid deal-miss call.
+        """
+        if player not in range(5):
+            return 1
+
+        if deal_miss:
+            if not is_deal_miss(self.hands[player], self.setup[1]):  # fake deal-miss call
+                return 2
+            else:
+                self.next_call = GameEngine.calltype['redeal']
+        else:
+            self.hand_confirmed[player] = True
+            if all(self.hand_confirmed):
+                self.next_call = GameEngine.calltype['exchange']
+
+        return 0
+
     def exchange(self, discarding_cards: list) -> int:
         """Given the three cards that the declarer will discard, deals with the exchange process.
 
-        Returns 0 on a successful call.
+        Returns 0 on valid call.
 
         Returns 1 on unexpected call.
         Returns 2 on invalid discarding_cards list
         """
-        if self.next_call != calltype['exchange']:
+        if self.next_call != GameEngine.calltype['exchange']:
             return 1
 
         if len(discarding_cards) != 3:
@@ -196,19 +198,19 @@ class GameEngine:
             if is_pointcard(card):
                 self.points[self.setup[0]].append(card)
 
-        self.next_call = calltype['trump change']
+        self.next_call = GameEngine.calltype['trump change']
         return 0
 
     def trump_change(self, trump: str) -> int:
         """Given the trump to change to (or to retain), proceeds with the change.
 
-        Returns 0 on a successful call.
+        Returns 0 on valid call.
 
         Returns 1 on unexpected call.
         Returns 2 on invalid trump.
         Returns 3 if bid can't be raised.
         """
-        if self.next_call != calltype['trump change']:
+        if self.next_call != GameEngine.calltype['trump change']:
             return 1
 
         if trump not in suits + ['N']:
@@ -227,11 +229,27 @@ class GameEngine:
             else:
                 self.setup[2] += bid_increase
 
-        self.next_call = calltype['friend call']
+        self.next_call = GameEngine.calltype['friend call']
         return 0
 
-    def friend_call(self):
-        pass
+    def friend_call(self, friend_card: str) -> int:
+        """Given the friend card, sets up the friend.
+        'NF' indicates no friend.
+
+        Returns 0 on valid call.
+
+        Returns 1 on unexpected call.
+        Returns 2 on invalid friend_card.
+        """
+        if self.next_call != GameEngine.calltype['friend call']:
+            return 1
+        if friend_card not in cards + ['NF']:
+            return 2
+
+        self.setup[3][1] = friend_card
+
+        self.next_call = GameEngine.calltype['play']
+        return 0
 
 
 # Player number is a value in range(5)
@@ -250,10 +268,7 @@ def trick_winner(trick: list, trump: str) -> int:
         raise AssertionError('Tricks should be in the format of [(player_num, played_card),...]')
 
     # Setting the Mighty card.
-    if trump == 'S':
-        mighty = 'DA'
-    else:
-        mighty = 'SA'
+    mighty = trump_to_mighty(trump)
 
     # Searching for Mighty.
     for player, card in trick:
@@ -311,5 +326,27 @@ def deal_deck() -> tuple:
     return hands, kitty  # will contain 5 hands plus the kitty
 
 
-def is_deal_miss(hand: list) -> bool:
-    raise NotImplementedError
+def trump_to_mighty(trump: str) -> str:
+    if trump == 'S':
+        mighty = 'DA'
+    else:
+        mighty = 'SA'
+
+    return mighty
+
+
+def is_deal_miss(hand: list, trump: str) -> bool:
+    mighty = trump_to_mighty(trump)
+
+    point_card_count = 0
+    for card in hand:
+        if is_pointcard(card) and card != mighty:
+            point_card_count += 1
+
+    if mighty in hand:
+        point_card_count -= 1
+
+    if point_card_count <= 1:
+        return True
+    else:
+        return False
