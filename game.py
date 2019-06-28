@@ -33,7 +33,7 @@ class GameEngine:
     # The block below sets the types of valid calls to the GameEngine, and assigns them to a dictionary.
     # This way, invalid call types cannot be set without invoking an KeyError.
     _calls = ['bid', 'deal-miss check', 'exchange', 'trump change', 'friend call',
-              'redeal', 'play']
+              'redeal', 'play', 'game over']
     calltype = {}
     for call in _calls:
         calltype[call] = call
@@ -42,11 +42,15 @@ class GameEngine:
 
     def __init__(self):
         self.hands, self.kitty = deal_deck()
-        self.points = [[] for _ in range(5)]
+        self.point_cards = [[] for _ in range(5)]
 
-        self.state = [self.hands, self.points]
+        self.mighty = uninit['card']
+        self.ripper = uninit['card']
 
+        # Play related variables
         self.tricks = []
+        self.current_trick = []
+        self.suit_led = uninit['suit']
 
         # Declarer, trump, bid, [friend, friend card]
         self.declarer = uninit['player']
@@ -54,9 +58,6 @@ class GameEngine:
         self.bid = uninit['bid']
         self.friend = uninit['player']
         self.friend_card = uninit['card']
-
-        # Game variable to store state, tricks and setup.
-        self.game = [self.state, self.tricks, self.setup]
 
         # Hand confirmation of players. (i.e. no deal-miss)
         self.hand_confirmed = [False for _ in range(5)]
@@ -145,7 +146,7 @@ class GameEngine:
             if no_pass_player_count == 1:  # Bidding has ended.
                 self.declarer = declarer_candidate  # Declarer is set.
                 self.trump, self.bid = self.bids[declarer_candidate]  # The trump suit and bid are set
-                self.next_call = GameEngine.calltype['deal_miss_check']
+                self.next_call = GameEngine.calltype['exchange']
                 return 0
 
         # The loop below finds the next bidder, ignoring players who passed.
@@ -153,30 +154,6 @@ class GameEngine:
             self.next_bidder = next_player(self.next_bidder)
             if self.bids[self.next_bidder][1] != 0:
                 break
-
-        return 0
-
-    def deal_miss_check(self, player: int, deal_miss: bool) -> int:
-        """Given player and whether that player announces a deal-miss, proceeds with the necessary steps.
-
-        Returns 0 on valid call.
-
-        Returns 1 on unexpected call.
-        Returns 2 on invalid player.
-        Returns 3 on invalid deal-miss call.
-        """
-        if player not in range(5):
-            return 1
-
-        if deal_miss:
-            if not is_deal_miss(self.hands[player], self.trump):  # fake deal-miss call
-                return 2
-            else:
-                self.next_call = GameEngine.calltype['redeal']
-        else:
-            self.hand_confirmed[player] = True
-            if all(self.hand_confirmed):
-                self.next_call = GameEngine.calltype['exchange']
 
         return 0
 
@@ -207,7 +184,7 @@ class GameEngine:
         for card in discarding_cards:
             declarer_hand.remove(card)
             if is_pointcard(card):
-                self.points[self.declarer].append(card)
+                self.point_cards[self.declarer].append(card)
 
         self.next_call = GameEngine.calltype['trump change']
         return 0
@@ -240,7 +217,39 @@ class GameEngine:
             else:
                 self.bid += bid_increase
 
-        self.next_call = GameEngine.calltype['friend call']
+            # Here the trump is finalized.
+            self.trump = trump
+            self.mighty = trump_to_mighty(self.trump)
+            self.ripper = trump_to_ripper(self.trump)
+
+        self.next_call = GameEngine.calltype['deal-miss check']
+        return 0
+
+    def deal_miss_check(self, player: int, deal_miss: bool) -> int:
+        """Given player and whether that player announces a deal-miss, proceeds with the necessary steps.
+
+        Returns 0 on valid call.
+
+        Returns 1 on unexpected call.
+        Returns 2 on invalid player.
+        Returns 3 on invalid deal-miss call.
+        """
+        if self.next_call != GameEngine.calltype['deal-miss check']:
+            return 1
+
+        if player not in range(5):
+            return 2
+
+        if deal_miss:
+            if not is_deal_miss(self.hands[player], self.mighty):  # fake deal-miss call
+                return 3
+            else:
+                self.next_call = GameEngine.calltype['redeal']
+        else:
+            self.hand_confirmed[player] = True
+            if all(self.hand_confirmed):
+                self.next_call = GameEngine.calltype['friend call']
+
         return 0
 
     def friend_call(self, friend_card: str) -> int:
@@ -263,8 +272,69 @@ class GameEngine:
         self.leader = self.declarer
         return 0
 
-    def play(self, p):
-        pass
+    def play(self, player: int, card: str, suit_led=uninit['suit'], activate_joker_call=False) -> int:
+        """Given the player and the card played by the player, processes the trick.
+
+        Returns 0 on valid call.
+
+        Returns 1 on unexpected call.
+        Returns 2 on invalid player.
+        Returns 3 on invalid card.
+        Returns 4 on invalid play.
+        Returns 5 on invalid suit_led when joker is played as leader.
+        """
+        if self.next_call != GameEngine.calltype['play']:
+            return 1
+
+        is_leader = len(self.current_trick) == 0
+
+        if is_leader:
+            if player != self.leader:
+                return 2
+        else:
+            if player != next_player(self.current_trick[-1][0]):
+                return 2
+
+        if card not in self.hands[player]:
+            return 3
+
+        if is_leader:
+            if card == joker:
+                if suit_led not in suits:
+                    return 5
+            else:
+                suit_led = card[0]
+                if card == self.ripper:
+                    if activate_joker_call:
+                        card = joker_call
+
+            self.suit_led = suit_led
+
+        if not is_valid_move(self.current_trick, self.suit_led, self.mighty, self.hands[player], card):
+            return 4
+
+        self.current_trick.append((player, card))
+        self.hands[player].remove(card)
+
+        if len(self.current_trick) == 5:
+            winner = trick_winner(len(self.tricks), self.current_trick, self.trump)
+
+            point_cards = [c for c in [play[1] for play in self.current_trick] if is_pointcard(c)]
+
+            self.point_cards[winner] += point_cards
+
+            self.tricks.append(self.current_trick)
+            self.current_trick = []
+
+            self.suit_led = uninit['suit']
+
+            self.leader = winner
+
+            if len(self.tricks) == 10:
+                # TODO: Determine game winners and proceed with the scoring
+                self.next_call = GameEngine.calltype['game over']
+
+        return 0
 
 
 # Player number is a value in range(5)
@@ -273,7 +343,7 @@ def next_player(prev_player: int) -> int:
     return (prev_player + 1) % 5
 
 
-def trick_winner(trick: list, trump: str) -> int:
+def trick_winner(trick_number: int, trick: list, trump: str) -> int:
     """Returns the winner of the trick, given the trick and the trump suit."""
     try:
         assert len(trick[0]) == 2
@@ -292,9 +362,10 @@ def trick_winner(trick: list, trump: str) -> int:
 
     # Searching for Joker.
     if not trick[0][1] == joker_call:  # if Joker Call is not led
-        for player, card in trick:
-            if card == joker:
-                return player
+        if trick_number not in (0, 9):  # if it isn't the first or last trick
+            for player, card in trick:
+                if card == joker:
+                    return player
 
     suit_led = trick[0][1][0]
     for target_suit in (trump, suit_led):  # Searches for trumps, then plays which match the suit led
@@ -350,18 +421,44 @@ def trump_to_mighty(trump: str) -> str:
     return mighty
 
 
-def is_deal_miss(hand: list, trump: str) -> bool:
-    mighty = trump_to_mighty(trump)
+def trump_to_ripper(trump: str) -> str:
+    if trump == 'C':
+        ripper = 'S3'
+    else:
+        ripper = 'C3'
 
+    return ripper
+
+
+def is_deal_miss(hand: list, mighty: str) -> bool:
     point_card_count = 0
     for card in hand:
         if is_pointcard(card) and card != mighty:
             point_card_count += 1
 
-    if mighty in hand:
-        point_card_count -= 1
-
     if point_card_count <= 1:
         return True
     else:
         return False
+
+
+def is_valid_move(trick: list, suit_led: str, mighty: str, hand: list, card: str) -> bool:
+    if len(trick) == 0:
+        return True
+    else:
+        if trick[0][1] == joker_call and joker in hand:
+            if card == joker:
+                return True
+            else:
+                return False
+        else:
+            if card in (mighty, joker):
+                return True
+            else:
+                if any([c[0] == suit_led for c in hand]):  # i.e. if a card of the suit led is in the hand
+                    if card[0] == suit_led:
+                        return True
+                    else:
+                        return False
+                else:
+                    return True
