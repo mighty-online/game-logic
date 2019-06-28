@@ -49,7 +49,11 @@ class GameEngine:
         self.tricks = []
 
         # Declarer, trump, bid, [friend, friend card]
-        self.setup = [uninit['player'], uninit['suit'], uninit['bid'], [uninit['player'], uninit['card']]]
+        self.declarer = uninit['player']
+        self.trump = uninit['suit']
+        self.bid = uninit['bid']
+        self.friend = uninit['player']
+        self.friend_card = uninit['card']
 
         # Game variable to store state, tricks and setup.
         self.game = [self.state, self.tricks, self.setup]
@@ -65,6 +69,13 @@ class GameEngine:
 
         # Stores what call type should come next
         self.next_call = GameEngine.calltype['bid']
+
+        # The leader of the next trick
+        self.leader = uninit['player']
+
+    def setup(self) -> list:
+        """Returns the setup information of the game."""
+        return [self.declarer, self.trump, self.bid, self.friend_card, self.friend]
 
     def proceed(self, call: str) -> int:
         """Automatically runs the appropriate method to proceed the game."""
@@ -132,8 +143,8 @@ class GameEngine:
                     return 0
 
             if no_pass_player_count == 1:  # Bidding has ended.
-                self.setup[0] = declarer_candidate  # Declarer is set.
-                self.setup[1], self.setup[2] = self.bids[declarer_candidate]  # The trump suit and bid are set
+                self.declarer = declarer_candidate  # Declarer is set.
+                self.trump, self.bid = self.bids[declarer_candidate]  # The trump suit and bid are set
                 self.next_call = GameEngine.calltype['deal_miss_check']
                 return 0
 
@@ -158,7 +169,7 @@ class GameEngine:
             return 1
 
         if deal_miss:
-            if not is_deal_miss(self.hands[player], self.setup[1]):  # fake deal-miss call
+            if not is_deal_miss(self.hands[player], self.trump):  # fake deal-miss call
                 return 2
             else:
                 self.next_call = GameEngine.calltype['redeal']
@@ -183,7 +194,7 @@ class GameEngine:
         if len(discarding_cards) != 3:
             return 2
 
-        declarer_hand = self.hands[self.setup[0]]
+        declarer_hand = self.hands[self.declarer]
 
         if not all([c in declarer_hand for c in discarding_cards]):
             return 2
@@ -196,7 +207,7 @@ class GameEngine:
         for card in discarding_cards:
             declarer_hand.remove(card)
             if is_pointcard(card):
-                self.points[self.setup[0]].append(card)
+                self.points[self.declarer].append(card)
 
         self.next_call = GameEngine.calltype['trump change']
         return 0
@@ -216,7 +227,7 @@ class GameEngine:
         if trump not in suits + ['N']:
             return 2
 
-        trump_has_changed = trump != self.setup[1]
+        trump_has_changed = trump != self.trump
 
         if trump_has_changed:
             if trump == 'N':
@@ -224,10 +235,10 @@ class GameEngine:
             else:
                 bid_increase = 2
 
-            if self.setup[2] + bid_increase > 20:
+            if self.bid + bid_increase > 20:
                 return 3
             else:
-                self.setup[2] += bid_increase
+                self.bid += bid_increase
 
         self.next_call = GameEngine.calltype['friend call']
         return 0
@@ -246,10 +257,14 @@ class GameEngine:
         if friend_card not in cards + ['NF']:
             return 2
 
-        self.setup[3][1] = friend_card
+        self.friend_card = friend_card
 
         self.next_call = GameEngine.calltype['play']
+        self.leader = self.declarer
         return 0
+
+    def play(self, p):
+        pass
 
 
 # Player number is a value in range(5)

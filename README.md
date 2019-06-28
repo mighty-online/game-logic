@@ -79,9 +79,9 @@ When unspecified in code, the below are the expected formats in which game const
  
     Example: `[[hand0, ..., hand4], [points0, ..., points4]]`
     
- - **Setup**: A list containing the declarer, trump suit, bid, and [friend, friend card] list.
+ - **Setup**: A list containing the declarer, trump suit, bid, friend card and friend.
  
-    Example: `[2, 'D', 15, [3, 'SA']]`, `[2, 'D', 15, [None, 'SA']]` 
+    Example: `[2, 'D', 15, 'SA', 3]`, `[2, 'D', 15, 'SA', -1]` 
     
     _Note: Before the friend card is played, the friend should remain as `None`_
     
