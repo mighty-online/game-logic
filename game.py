@@ -32,7 +32,7 @@ class GameEngine:
 
     # The block below sets the types of valid calls to the GameEngine, and assigns them to a dictionary.
     # This way, invalid call types cannot be set without invoking an KeyError.
-    _calls = ['bid', 'deal-miss check', 'exchange', 'trump change', 'friend call',
+    _calls = ['bid', 'miss-deal check', 'exchange', 'trump change', 'friend call',
               'redeal', 'play', 'game over']
     calltype = {}
     for call in _calls:
@@ -59,7 +59,7 @@ class GameEngine:
         self.friend = uninit['player']
         self.friend_card = uninit['card']
 
-        # Hand confirmation of players. (i.e. no deal-miss)
+        # Hand confirmation of players. (i.e. no miss-deal)
         self.hand_confirmed = [False for _ in range(5)]
 
         # Bidding related variables.
@@ -222,26 +222,26 @@ class GameEngine:
             self.mighty = trump_to_mighty(self.trump)
             self.ripper = trump_to_ripper(self.trump)
 
-        self.next_call = GameEngine.calltype['deal-miss check']
+        self.next_call = GameEngine.calltype['miss-deal check']
         return 0
 
-    def deal_miss_check(self, player: int, deal_miss: bool) -> int:
-        """Given player and whether that player announces a deal-miss, proceeds with the necessary steps.
+    def miss_deal_check(self, player: int, miss_deal: bool) -> int:
+        """Given player and whether that player announces a miss-deal, proceeds with the necessary steps.
 
         Returns 0 on valid call.
 
         Returns 1 on unexpected call.
         Returns 2 on invalid player.
-        Returns 3 on invalid deal-miss call.
+        Returns 3 on invalid miss-deal call.
         """
-        if self.next_call != GameEngine.calltype['deal-miss check']:
+        if self.next_call != GameEngine.calltype['miss-deal check']:
             return 1
 
         if player not in range(5):
             return 2
 
-        if deal_miss:
-            if not is_deal_miss(self.hands[player], self.mighty):  # fake deal-miss call
+        if miss_deal:
+            if not is_miss_deal(self.hands[player], self.mighty):  # fake miss-deal call
                 return 3
             else:
                 self.next_call = GameEngine.calltype['redeal']
@@ -430,7 +430,7 @@ def trump_to_ripper(trump: str) -> str:
     return ripper
 
 
-def is_deal_miss(hand: list, mighty: str) -> bool:
+def is_miss_deal(hand: list, mighty: str) -> bool:
     point_card_count = 0
     for card in hand:
         if is_pointcard(card) and card != mighty:
