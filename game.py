@@ -64,7 +64,7 @@ class GameEngine:
 
         # Bidding related variables.
         self.next_bidder = uninit['player']
-        self.lower_bound = 13
+        self.lower_bid_bound = 13
         self.highest_bid = uninit['bid']
         self.bids = [(uninit['suit'], uninit['bid']) for _ in range(5)]
 
@@ -73,6 +73,11 @@ class GameEngine:
 
         # The leader of the next trick
         self.leader = uninit['player']
+
+        # Game winners and losers, scoring
+        self.declarer_won = None
+        self.double_score = None
+        self.gamepoints_rewarded = [0] * 5
 
     def setup(self) -> list:
         """Returns the setup information of the game."""
@@ -121,7 +126,7 @@ class GameEngine:
             if self.highest_bid:  # i.e. if there exists a previous bid.
                 if self.highest_bid >= bid + no_trump:
                     return 4
-            if bid < self.lower_bound:
+            if bid < self.lower_bid_bound:
                 return 4
 
             self.bids[bidder] = (trump, bid)
@@ -136,8 +141,8 @@ class GameEngine:
                     no_pass_player_count += 1
 
             if no_pass_player_count == 0:  # i.e. everyone has passed.
-                if self.lower_bound == 13:
-                    self.lower_bound -= 1
+                if self.lower_bid_bound == 13:
+                    self.lower_bid_bound -= 1
                     self.bids = [(uninit['suit'], uninit['bid']) for _ in range(5)]
                 else:  # If everyone passes even with 12 as the lower bound, there should be a redeal.
                     self.next_call = GameEngine.calltype['redeal']
@@ -298,6 +303,12 @@ class GameEngine:
         if card not in self.hands[player]:
             return 3
 
+        # The check for friend card should be located before the joker call substitution.
+        if card == self.friend_card:
+            friend_reveal = True
+        else:
+            friend_reveal = False
+
         if is_leader:
             if card == joker:
                 if suit_led not in suits:
@@ -306,15 +317,19 @@ class GameEngine:
                 suit_led = card[0]
                 if card == self.ripper:
                     if activate_joker_call:
-                        card = joker_call
+                        card = joker_call  # the joker call substitution
 
             self.suit_led = suit_led
 
-        if not is_valid_move(self.current_trick, self.suit_led, self.mighty, self.hands[player], card):
+        if not is_valid_move(len(self.tricks), self.current_trick, self.suit_led, self.trump, self.hands[player], card):
             return 4
 
         self.current_trick.append((player, card))
         self.hands[player].remove(card)
+
+        # The friend is set when the friend card has been played.
+        if friend_reveal:
+            self.friend = player
 
         if len(self.current_trick) == 5:
             winner = trick_winner(len(self.tricks), self.current_trick, self.trump)
@@ -331,10 +346,55 @@ class GameEngine:
             self.leader = winner
 
             if len(self.tricks) == 10:
-                # TODO: Determine game winners and proceed with the scoring
+                self.set_winners()
                 self.next_call = GameEngine.calltype['game over']
 
         return 0
+
+    def set_winners(self, gamepoint_transfer_function=None) -> None:
+        """Sets the gamepoints to be rewarded to each player after game ends."""
+        if gamepoint_transfer_function is None:
+            gamepoint_transfer_function = default_gamepoint_transfer
+
+        self.double_score = False
+        declarer_team_points = len(self.point_cards[self.declarer])
+
+        if self.friend != -1 and self.friend != self.declarer:
+            declarer_team_points += len(self.point_cards[self.friend])
+
+        self.declarer_won = declarer_team_points >= self.bid
+
+        if self.friend_card == 'NF':
+            self.double_score = True
+        if self.trump == 'N':
+            self.double_score = True
+
+        unit = gamepoint_transfer_function(self.declarer_won, self.double_score, self.bid, declarer_team_points)
+
+        for player in range(5):
+            if player == self.declarer:
+                self.gamepoints_rewarded[player] = unit * 2
+            elif player == self.friend:
+                self.gamepoints_rewarded[player] = unit
+            else:
+                self.gamepoints_rewarded[player] = - unit
+
+        if not self.declarer_won:
+            for i in range(len(self.gamepoints_rewarded)):
+                self.gamepoints_rewarded[i] *= -1
+
+
+def default_gamepoint_transfer(declarer_won: bool, double_score: bool, bid: int, declarer_cards_won: int,
+                               lower_bid_bound) -> int:
+    """Returns the unit of gamepoint transfer.
+
+    The declarer wins (or loses) twice the unit.
+    The friend and defenders win (or lose) the unit amount of gamepoint."""
+    if declarer_won:
+        multiplier = 2 if double_score else 1
+        return multiplier * (declarer_cards_won - bid) + (bid - lower_bid_bound) * 2
+    else:
+        return bid - declarer_cards_won
 
 
 # Player number is a value in range(5)
@@ -442,9 +502,13 @@ def is_miss_deal(hand: list, mighty: str) -> bool:
         return False
 
 
-def is_valid_move(trick: list, suit_led: str, mighty: str, hand: list, card: str) -> bool:
+def is_valid_move(trick_number: int, trick: list, suit_led: str, trump: str, hand: list, card: str) -> bool:
     if len(trick) == 0:
-        return True
+        # Cannot play a card of the trump suit as the first card of the game
+        if trick_number == 0 and card[0] == trump:
+            return False
+        else:
+            return True
     else:
         if trick[0][1] == joker_call and joker in hand:
             if card == joker:
@@ -452,7 +516,7 @@ def is_valid_move(trick: list, suit_led: str, mighty: str, hand: list, card: str
             else:
                 return False
         else:
-            if card in (mighty, joker):
+            if card in (trump_to_mighty(trump), joker):
                 return True
             else:
                 if any([c[0] == suit_led for c in hand]):  # i.e. if a card of the suit led is in the hand
