@@ -369,7 +369,8 @@ class GameEngine:
         if self.trump == 'N':
             self.double_score = True
 
-        unit = gamepoint_transfer_function(self.declarer_won, self.double_score, self.bid, declarer_team_points)
+        unit = gamepoint_transfer_function(self.declarer_won, self.double_score, self.bid, declarer_team_points,
+                                           self.lower_bid_bound)
 
         for player in range(5):
             if player == self.declarer:
