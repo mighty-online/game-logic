@@ -474,6 +474,7 @@ def deal_deck() -> tuple:
 
 
 def trump_to_mighty(trump: str) -> str:
+    """Given the trump suit, returns the mighty card."""
     if trump == 'S':
         mighty = 'DA'
     else:
@@ -483,6 +484,7 @@ def trump_to_mighty(trump: str) -> str:
 
 
 def trump_to_ripper(trump: str) -> str:
+    """Given the trump suit, returns the ripper card."""
     if trump == 'C':
         ripper = 'S3'
     else:
@@ -492,6 +494,7 @@ def trump_to_ripper(trump: str) -> str:
 
 
 def is_miss_deal(hand: list, mighty: str) -> bool:
+    """Determines whether the given hand qualifies as a miss-deal."""
     point_card_count = 0
     for card in hand:
         if is_pointcard(card) and card != mighty:
@@ -504,6 +507,7 @@ def is_miss_deal(hand: list, mighty: str) -> bool:
 
 
 def is_valid_move(trick_number: int, trick: list, suit_led: str, trump: str, hand: list, card: str) -> bool:
+    """Given information about the ongoing trick, returns whether a card is valid to be played."""
     if len(trick) == 0:
         # Cannot play a card of the trump suit as the first card of the game
         if trick_number == 0 and card[0] == trump:
