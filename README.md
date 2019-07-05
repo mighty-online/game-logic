@@ -45,6 +45,8 @@ When unspecified in code, the below are the expected formats in which game const
      
      _Note that an active Joker Call is denoted as `'JC'`._
      
+     _Note that the friend card indicating a 'no-friend' is `'NF'`._
+     
  - **Bid**: An integer less or equal to 20.
  
     Example: `14`
