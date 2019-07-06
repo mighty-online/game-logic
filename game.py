@@ -82,7 +82,7 @@ class GameEngine:
 
         # Game winners and losers, scoring
         self.declarer_won = None
-        self.double_score = None
+        self.multiplier = 1
         self.gamepoints_rewarded = [0] * 5
 
     def setup(self) -> list:
@@ -371,7 +371,6 @@ class GameEngine:
         if gamepoint_transfer_function is None:
             gamepoint_transfer_function = default_gamepoint_transfer
 
-        self.double_score = False
         declarer_team_points = len(self.point_cards[self.declarer])
 
         if self.friend != -1 and self.friend != self.declarer:
@@ -380,11 +379,15 @@ class GameEngine:
         self.declarer_won = declarer_team_points >= self.bid
 
         if self.friend_card == 'NF':
-            self.double_score = True
+            self.multiplier *= 2
         if self.trump == 'N':
-            self.double_score = True
+            self.multiplier *= 2
+        if self.declarer_won and declarer_team_points == 20:  # run
+            self.multiplier *= 2
+        if not self.declarer_won and declarer_team_points < 10:  # back-run
+            self.multiplier *= 2
 
-        unit = gamepoint_transfer_function(self.declarer_won, self.double_score, self.bid, declarer_team_points,
+        unit = gamepoint_transfer_function(self.declarer_won, self.multiplier, self.bid, declarer_team_points,
                                            self.minimum_bid)
 
         # First, the gamepoints are rewarded as if the declarer won.
@@ -402,17 +405,16 @@ class GameEngine:
                 self.gamepoints_rewarded[i] *= -1
 
 
-def default_gamepoint_transfer(declarer_won: bool, double_score: bool, bid: int, declarer_cards_won: int,
+def default_gamepoint_transfer(declarer_won: bool, multiplier: int, bid: int, declarer_cards_won: int,
                                lower_bid_bound) -> int:
     """Returns the unit of gamepoint transfer.
 
     The declarer wins (or loses) twice the unit.
     The friend and defenders win (or lose) the unit amount of gamepoint."""
     if declarer_won:
-        multiplier = 2 if double_score else 1
         return multiplier * (declarer_cards_won - bid) + (bid - lower_bid_bound) * 2
     else:
-        return bid - declarer_cards_won
+        return multiplier * (bid - declarer_cards_won)
 
 
 # Player number is a value in range(5)
