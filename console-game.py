@@ -255,7 +255,6 @@ while True:
 
     elif call_type == game.GameEngine.calltype['play']:
 
-
         # Below block finds whose turn it is.
         player = mighty_game.leader
         for _ in range(len(mighty_game.current_trick)):
