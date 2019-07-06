@@ -12,6 +12,7 @@ __email__ = "jake.hyun@hotmail.com"
 __status__ = "Development"
 
 suits = ['S', 'D', 'H', 'C']
+no_trump = 'N'
 suits_short_to_long = {'S': 'Spades', 'D': 'Diamonds', 'H': 'Hearts', 'C': 'Clubs', 'N': 'no-trump'}
 pointcard_ranks = ['X', 'J', 'Q', 'K', 'A']
 ranks = ['2', '3', '4', '5', '6', '7', '8', '9'] + pointcard_ranks
@@ -32,12 +33,15 @@ class GameEngine:
 
     # The block below sets the types of valid calls to the GameEngine, and assigns them to a dictionary.
     # This way, invalid call types cannot be set without invoking an KeyError.
-    _calls = ['bid', 'exchange', 'miss-deal check', 'trump change', 'friend call',
+    _calls = ['bid', 'exchange', 'trump change', 'miss-deal check', 'friend call',
               'redeal', 'play', 'game over']
+
     calltype = {}
+
+    call = ''
     for call in _calls:
         calltype[call] = call
-
+    del call
     del _calls
 
     def __init__(self):
@@ -51,6 +55,7 @@ class GameEngine:
         self.completed_tricks = []
         self.current_trick = []
         self.suit_led = uninit['suit']
+        self.recent_winner = uninit['player']
 
         # Declarer, trump, bid, [friend, friend card]
         self.declarer = uninit['player']
@@ -91,10 +96,6 @@ class GameEngine:
     def perspective(self, player):
         """Returns the perspective of the given player."""
         return [self.hands[player], self.tricks(), self.suit_led, self.setup()]
-
-    def proceed(self, call: str) -> int:
-        """Automatically runs the appropriate method to proceed the game."""
-        raise NotImplementedError
 
     def bidding(self, bidder: int, trump: str, bid: int) -> int:
         """Processes the bidding phase, one bid per call.
@@ -160,8 +161,6 @@ class GameEngine:
             if no_pass_player_count == 1:  # Bidding has ended.
                 self.declarer = declarer_candidate  # Declarer is set.
                 self.trump, self.bid = self.bids[declarer_candidate]  # The trump suit and bid are set
-
-
 
                 self.next_call = GameEngine.calltype['exchange']
                 return 0
@@ -307,6 +306,7 @@ class GameEngine:
         is_leader = len(self.current_trick) == 0
 
         if is_leader:
+            self.recent_winner = uninit['player']
             if player != self.leader:
                 return 2
         else:
@@ -346,18 +346,18 @@ class GameEngine:
             self.friend = player
 
         if len(self.current_trick) == 5:
-            winner = trick_winner(len(self.completed_tricks), self.current_trick, self.trump)
+            self.recent_winner = trick_winner(len(self.completed_tricks), self.current_trick, self.trump)
 
             point_cards = [c for c in [play[1] for play in self.current_trick] if is_pointcard(c)]
 
-            self.point_cards[winner] += point_cards
+            self.point_cards[self.recent_winner] += point_cards
 
             self.completed_tricks.append(self.current_trick)
             self.current_trick = []
 
             self.suit_led = uninit['suit']
 
-            self.leader = winner
+            self.leader = self.recent_winner
 
             # when game is over
             if len(self.completed_tricks) == 10:
@@ -525,6 +525,8 @@ def is_miss_deal(hand: list, mighty: str) -> bool:
 
 def is_valid_move(trick_number: int, trick: list, suit_led: str, trump: str, hand: list, card: str) -> bool:
     """Given information about the ongoing trick, returns whether a card is valid to be played."""
+    if card not in hand:
+        return False
     if len(trick) == 0:
         # Cannot play a card of the trump suit as the first card of the game
         if trick_number == 0 and card[0] == trump:

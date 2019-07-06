@@ -3,15 +3,6 @@
 import random
 import game
 
-__author__ = "Jake Hyun (SyphonArch)"
-__copyright__ = "Copyright 2019, The Mighty-Online Team"
-__credits__ = ["Jake Hyun (SyphonArch)"]
-__license__ = "MIT"
-__version__ = "0.1.0"
-__maintainer__ = "Jake Hyun (SyphonArch)"
-__email__ = "jake.hyun@hotmail.com"
-__status__ = "Development"
-
 space = 100
 
 
@@ -45,15 +36,17 @@ def random_random_bidder(hand, prev_trump, prev_bid, minimum_bid):
         if suit_counts[suit] == maximum_suit_num:
             trump = suit
 
-    if random.random() > 0.5:
-        for bid in range(1, 21):
-            if game.is_valid_bid(trump, bid, prev_trump, prev_bid, minimum_bid):
+    for bid in range(1, 21):
+        if game.is_valid_bid(trump, bid, prev_trump, prev_bid, minimum_bid):
+            if random.random() > bid / 21:
                 return trump, bid
+            else:
+                break
 
     return game.uninit['suit'], 0
 
 
-def imma_call_miss_deal(hand):
+def imma_call_miss_deal(hand, trump):
     """Will always call miss-deal. That is, this function simply returns True."""
     return True
 
@@ -83,7 +76,7 @@ def mighty_joker_trump_friend_caller(hand, trump):
 def introduce_hands(hands, players):
     for player in players:
         input("Press Enter to reveal Player {}'s hand.".format(player))
-        print(' '.join(hands[player]))
+        print(' '.join([game.unicode_card(c) for c in hands[player]]))
         input("Press Enter to clear screen.")
         print('\n' * space)
 
@@ -100,6 +93,7 @@ ai_player = random_random_player
 ##############################################
 
 while True:
+    ai_num = '5'
     ai_num = input("How many AI agents?: ")
     print()
     if ai_num.isdigit() and int(ai_num) in range(6):
@@ -116,6 +110,8 @@ for i in range(len(ai_players_seed)):
         ai_players.append(i)
 
 human_players = [p for p in range(5) if p not in ai_players]
+if len(human_players) == 1:
+    space = 0
 
 ai_nums_str = ', '.join([str(x) for x in ai_players])
 print('Player numbers {} are AI agents.'.format(ai_nums_str))
@@ -180,7 +176,8 @@ while True:
             while True:
                 to_discard = input("Enter the three cards to discard, space seperated: ")
                 to_discard = to_discard.split()
-                if all([x for x in to_discard if x in mighty_game.hands[mighty_game.declarer] + mighty_game.kitty]):
+                if to_discard and all(
+                        [x in mighty_game.hands[mighty_game.declarer] + mighty_game.kitty for x in to_discard]):
                     break
                 print("Invalid input.")
 
@@ -189,25 +186,137 @@ while True:
         print('Exchange over.')
         feedback = mighty_game.exchange(to_discard)
 
-    elif call_type == game.GameEngine.calltype['miss-deal check']:
-        input('HALT')
-
     elif call_type == game.GameEngine.calltype['trump change']:
-        input("HALT")
+        prev_trump = mighty_game.trump
+        if mighty_game.declarer in human_players:
+            while True:
+                final_trump = input("Finalize your trump: ")
+                if final_trump in game.suits + [game.no_trump]:
+                    feedback = mighty_game.trump_change(final_trump)
+                    if feedback == 0:
+                        break
+                print("Invalid trump.")
+        else:
+            feedback = mighty_game.trump_change(final_trump)
+
+        new_trump = mighty_game.trump
+
+        changed_or_fixed = 'changed' if new_trump != prev_trump else 'fixed'
+
+        print("The trump suit has been {} to {}.".format(changed_or_fixed, game.suits_short_to_long[final_trump]))
+        print('The final bid is {} {}.'.format(game.suits_short_to_long[mighty_game.trump], mighty_game.bid))
+
+    elif call_type == game.GameEngine.calltype['miss-deal check']:
+        print("Miss-deal check in process.")
+        deal_miss = [False] * 5
+        for player in range(5):
+            call_miss_deal = False
+            if game.is_miss_deal(mighty_game.hands[player], mighty_game.mighty):
+                if player in ai_players:
+                    call_miss_deal = ai_miss_deal_caller(mighty_game.hands[player], mighty_game.trump)
+                else:
+                    yes_or_no = input('Player {} - Call miss-deal?: '.format(player))
+                    if yes_or_no.lower() in ('y', 'yes'):
+                        call_miss_deal = True
+                if call_miss_deal:
+                    print("Player {} announces miss-deal!".format(player))
+                    print(' '.join(mighty_game.hands[player]))
+                deal_miss[player] = call_miss_deal
+
+        for player in range(5):
+            feedback = mighty_game.miss_deal_check(player, deal_miss[player])
+            if feedback:
+                print('Fuck.')
+                print(feedback)
+                exit(1)
+            if mighty_game.next_call != game.GameEngine.calltype['miss-deal check']:
+                break
 
     elif call_type == game.GameEngine.calltype['friend call']:
-        input("HALT")
+        print("Friend to be called.")
+        if mighty_game.declarer in ai_players:
+            friend_card = ai_friend_caller(mighty_game.hands[mighty_game.declarer], mighty_game.trump)
+        else:
+            while True:
+                friend_card = input("Enter friend card: ")
+                if friend_card in game.cards:
+                    break
+                print("Invalid card.")
+
+        print("{} friend called.".format(friend_card))
+        feedback = mighty_game.friend_call(friend_card)
 
     elif call_type == game.GameEngine.calltype['redeal']:
         print("REDEAL IN PROCESS.")
         mighty_game = game.GameEngine()
+        print("REDEAL COMPLETE.")
+        print()
         introduce_hands(mighty_game.hands, human_players)
 
     elif call_type == game.GameEngine.calltype['play']:
-        input("HALT")
+
+
+        # Below block finds whose turn it is.
+        player = mighty_game.leader
+        for _ in range(len(mighty_game.current_trick)):
+            player = game.next_player(player)
+
+        if player == mighty_game.leader:
+            for p in range(5):
+                if p not in (mighty_game.declarer, mighty_game.friend):
+                    print('Player {}: {} points'.format(p, len(mighty_game.point_cards[p])))
+            print()
+            print("Trick #{}".format(len(mighty_game.completed_tricks) + 1))
+            print()
+
+        for p, c in mighty_game.current_trick:
+            print("Player {}: {}".format(p, c))
+        print()
+        print("Player {}'s turn to play.".format(player))
+
+        perspective = mighty_game.perspective(player)
+
+        if player in ai_players:
+            card = ai_player(perspective)
+        else:
+            while True:
+                card = input("Player {} - Enter card to play: ".format(player))
+                if game.is_valid_move(len(mighty_game.completed_tricks), mighty_game.current_trick,
+                                      mighty_game.suit_led, mighty_game.trump, mighty_game.hands[player], card):
+                    break
+                print("Invalid play.")
+
+        suit_led = game.uninit['suit']
+        activate_joker_call = False
+
+        print("Player {} plays {}.".format(player, card))
+
+        if card == game.joker and player == mighty_game.leader:
+            if player in ai_players:
+                # TODO: Create AI for this
+                suit_led = 'S'
+            else:
+                while True:
+                    suit_led = input("Specify the suit led: ")
+                    if suit_led in game.suits:
+                        break
+                    print("Invalid suit.")
+            print("Suit led is {}.".format(suit_led))
+        elif card == mighty_game.ripper and player == mighty_game.leader:
+            if player in ai_players:
+                # TODO: Create AI for this
+                activate_joker_call = True
+            else:
+                yes_or_no = input("Activate joker call?: ")
+                if yes_or_no.lower() in ('yes', 'y'):
+                    activate_joker_call = True
+            if activate_joker_call:
+                print("Joker call activated!")
+
+        feedback = mighty_game.play(player, card, suit_led, activate_joker_call)
 
     elif call_type == game.GameEngine.calltype['game over']:
-        input("HALT")
+        break
 
     else:
         print("CRITICAL: There is no method of handling specified for call type '{}'".format(call_type))
@@ -216,4 +325,12 @@ while True:
     if feedback:
         print('Calltype: {}, Error #{}'.format(mighty_game.next_call, feedback))
         exit(1)
+
+    if mighty_game.recent_winner != game.uninit['player']:
+        print("Trick won by Player {}!".format(mighty_game.recent_winner))
+
     print('-------------------------------')
+
+print("The game is over.")
+print(mighty_game.declarer_won)
+print(mighty_game.gamepoints_rewarded)
