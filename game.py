@@ -12,7 +12,7 @@ __email__ = "jake.hyun@hotmail.com"
 __status__ = "Development"
 
 suits = ['S', 'D', 'H', 'C']
-suits_short_to_long = {'S': 'Spades', 'D': 'Diamonds', 'H': 'Hearts', 'C': 'Clubs'}
+suits_short_to_long = {'S': 'Spades', 'D': 'Diamonds', 'H': 'Hearts', 'C': 'Clubs', 'N': 'no-trump'}
 pointcard_ranks = ['X', 'J', 'Q', 'K', 'A']
 ranks = ['2', '3', '4', '5', '6', '7', '8', '9'] + pointcard_ranks
 
@@ -32,7 +32,7 @@ class GameEngine:
 
     # The block below sets the types of valid calls to the GameEngine, and assigns them to a dictionary.
     # This way, invalid call types cannot be set without invoking an KeyError.
-    _calls = ['bid', 'miss-deal check', 'exchange', 'trump change', 'friend call',
+    _calls = ['bid', 'exchange', 'miss-deal check', 'trump change', 'friend call',
               'redeal', 'play', 'game over']
     calltype = {}
     for call in _calls:
@@ -48,7 +48,7 @@ class GameEngine:
         self.ripper = uninit['card']
 
         # Play related variables
-        self.tricks = []
+        self.completed_tricks = []
         self.current_trick = []
         self.suit_led = uninit['suit']
 
@@ -63,9 +63,10 @@ class GameEngine:
         self.hand_confirmed = [False for _ in range(5)]
 
         # Bidding related variables.
-        self.next_bidder = uninit['player']
-        self.lower_bid_bound = 13
+        self.next_bidder = 0
+        self.minimum_bid = 13
         self.highest_bid = uninit['bid']
+        self.trump_candidate = uninit['suit']
         self.bids = [(uninit['suit'], uninit['bid']) for _ in range(5)]
 
         # Stores what call type should come next
@@ -83,6 +84,14 @@ class GameEngine:
         """Returns the setup information of the game."""
         return [self.declarer, self.trump, self.bid, self.friend_card, self.friend]
 
+    def tricks(self):
+        """Returns previous and current tricks together in a list."""
+        return self.completed_tricks + [self.current_trick]
+
+    def perspective(self, player):
+        """Returns the perspective of the given player."""
+        return [self.hands[player], self.tricks(), self.suit_led, self.setup()]
+
     def proceed(self, call: str) -> int:
         """Automatically runs the appropriate method to proceed the game."""
         raise NotImplementedError
@@ -98,7 +107,7 @@ class GameEngine:
         Returns 4 on invalid bid.
 
         Bids are saved in self.bids in player order. Each bid is a tuple of (trump, bid).
-        A pass is marked by a 0.
+        A pass is indicated by a bid of 0.
         """
 
         if self.next_call != GameEngine.calltype['bid']:
@@ -116,21 +125,21 @@ class GameEngine:
         if bid == 0:
             self.bids[bidder] = (uninit['suit'], 0)
         else:
-            if trump == 'N':
-                no_trump = 1
-            else:
-                if trump not in suits:
-                    return 3
-                no_trump = 0
+            if trump not in suits + ['N']:
+                return 3
 
-            if self.highest_bid:  # i.e. if there exists a previous bid.
-                if self.highest_bid >= bid + no_trump:
-                    return 4
-            if bid < self.lower_bid_bound:
+            if not is_valid_bid(trump, bid, self.trump_candidate, self.highest_bid, self.minimum_bid):
                 return 4
 
             self.bids[bidder] = (trump, bid)
             self.highest_bid = bid
+            self.trump_candidate = trump
+
+            # If a no-trump bid of 20 has been made, everyone else has to pass automatically.
+            if bid == 20 and trump == 'N':
+                for player in range(5):
+                    if player != bidder:
+                        self.bids[player] = (uninit['suit'], 0)
 
         if all([b[1] != uninit['bid'] for b in self.bids]):  # i.e. if everyone has passed or made a bid.
             no_pass_player_count = 0
@@ -141,8 +150,8 @@ class GameEngine:
                     no_pass_player_count += 1
 
             if no_pass_player_count == 0:  # i.e. everyone has passed.
-                if self.lower_bid_bound == 13:
-                    self.lower_bid_bound -= 1
+                if self.minimum_bid == 13:
+                    self.minimum_bid -= 1
                     self.bids = [(uninit['suit'], uninit['bid']) for _ in range(5)]
                 else:  # If everyone passes even with 12 as the lower bound, there should be a redeal.
                     self.next_call = GameEngine.calltype['redeal']
@@ -151,6 +160,9 @@ class GameEngine:
             if no_pass_player_count == 1:  # Bidding has ended.
                 self.declarer = declarer_candidate  # Declarer is set.
                 self.trump, self.bid = self.bids[declarer_candidate]  # The trump suit and bid are set
+
+
+
                 self.next_call = GameEngine.calltype['exchange']
                 return 0
 
@@ -178,12 +190,13 @@ class GameEngine:
 
         declarer_hand = self.hands[self.declarer]
 
-        if not all([c in declarer_hand for c in discarding_cards]):
-            return 2
-
         # Moves the contents of the kitty into the declarer's hand.
         declarer_hand += self.kitty
         self.kitty = []
+
+        # Checks that all discarding cards are in the declarer's hand.
+        if not all([c in declarer_hand for c in discarding_cards]):
+            return 2
 
         # Discards the three cards into the declarer's point card list. (if point card)
         for card in discarding_cards:
@@ -321,7 +334,8 @@ class GameEngine:
 
             self.suit_led = suit_led
 
-        if not is_valid_move(len(self.tricks), self.current_trick, self.suit_led, self.trump, self.hands[player], card):
+        if not is_valid_move(len(self.completed_tricks), self.current_trick, self.suit_led, self.trump,
+                             self.hands[player], card):
             return 4
 
         self.current_trick.append((player, card))
@@ -332,20 +346,21 @@ class GameEngine:
             self.friend = player
 
         if len(self.current_trick) == 5:
-            winner = trick_winner(len(self.tricks), self.current_trick, self.trump)
+            winner = trick_winner(len(self.completed_tricks), self.current_trick, self.trump)
 
             point_cards = [c for c in [play[1] for play in self.current_trick] if is_pointcard(c)]
 
             self.point_cards[winner] += point_cards
 
-            self.tricks.append(self.current_trick)
+            self.completed_tricks.append(self.current_trick)
             self.current_trick = []
 
             self.suit_led = uninit['suit']
 
             self.leader = winner
 
-            if len(self.tricks) == 10:
+            # when game is over
+            if len(self.completed_tricks) == 10:
                 self.set_winners()
                 self.next_call = GameEngine.calltype['game over']
 
@@ -370,8 +385,9 @@ class GameEngine:
             self.double_score = True
 
         unit = gamepoint_transfer_function(self.declarer_won, self.double_score, self.bid, declarer_team_points,
-                                           self.lower_bid_bound)
+                                           self.minimum_bid)
 
+        # First, the gamepoints are rewarded as if the declarer won.
         for player in range(5):
             if player == self.declarer:
                 self.gamepoints_rewarded[player] = unit * 2
@@ -380,6 +396,7 @@ class GameEngine:
             else:
                 self.gamepoints_rewarded[player] = - unit
 
+        # Then, if the declarer did not win, all rewarded gamepoints are flipped.
         if not self.declarer_won:
             for i in range(len(self.gamepoints_rewarded)):
                 self.gamepoints_rewarded[i] *= -1
@@ -531,3 +548,25 @@ def is_valid_move(trick_number: int, trick: list, suit_led: str, trump: str, han
                         return False
                 else:
                     return True
+
+
+def is_valid_bid(trump: str, bid: int, prev_trump: str, prev_bid: int, minimum_bid: int) -> bool:
+    """Given information about a bid and the previous one made, returns whether the bid is valid.
+
+    If no previous bid has been made, the argument to prev_trump should be uninit['suit'].
+    """
+    if prev_trump == uninit['suit']:  # i.e. if there is no previous bid
+        if trump == 'N':
+            lower_bound = minimum_bid - 1
+        else:
+            lower_bound = minimum_bid
+    else:
+        if trump == 'N' and prev_trump != 'N':
+            lower_bound = prev_bid
+        else:
+            lower_bound = prev_bid + 1
+
+    if lower_bound <= bid <= 20:
+        return True
+    else:
+        return False
