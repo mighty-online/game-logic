@@ -4,7 +4,7 @@ import random
 import game
 
 space = 100
-card_mode = 0  # 0 for standard card string, 1 for unicode representations
+card_mode = 1  # 0 for standard card string, 1 for unicode representations
 
 
 def card_repr(card: str) -> str:
@@ -129,7 +129,7 @@ ai_joker_call_activator = imma_activate_joker_call
 
 while True:
     ai_num = '5'
-    #ai_num = input("How many AI agents?: ")
+    ai_num = input("How many AI agents?: ")
     print()
     if ai_num.isdigit() and int(ai_num) in range(6):
         ai_num = int(ai_num)

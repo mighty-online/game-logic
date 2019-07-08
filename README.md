@@ -85,7 +85,7 @@ When unspecified in code, the below are the expected formats in which game const
  
     Example: `[2, 'D', 15, 'SA', 3]`, `[2, 'D', 15, 'SA', -1]` 
     
-    _Note: Before the friend card is played, the friend should remain as `None`_
+    _Note: Before the friend card is played, the friend should remain as `game.uninit['player']`_
     
  - **Game**: A list consisting of state, a list of tricks, and the setup data.
  
