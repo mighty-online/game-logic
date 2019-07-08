@@ -58,18 +58,18 @@ def random_random_bidder(hand: list, prev_trump: str, prev_bid: int, minimum_bid
     return game.uninit['suit'], 0
 
 
-def imma_call_miss_deal(hand, trump):
+def imma_call_miss_deal(hand: list, trump: str) -> bool:
     """Will always call miss-deal. That is, this function simply returns True."""
     return True
 
 
-def random_random_exchanger(hand, trump):
+def random_random_exchanger(hand: list, trump: str) -> tuple:
     """Returns three cards to discard and the trump to change to, on a very random basis."""
     random.shuffle(hand)
     return hand[:3], trump
 
 
-def mighty_joker_trump_friend_caller(hand, trump):
+def mighty_joker_trump_friend_caller(hand: list, trump: str) -> str:
     """Calls the friend card, prioritizing the mighty, followed by joker, then a card of the trump suit.
 
     Doesn't call itself."""
@@ -88,14 +88,14 @@ def mighty_joker_trump_friend_caller(hand, trump):
         exit(1)
 
 
-def random_random_suit_led_specifier(perspective):
+def random_random_suit_led_specifier(perspective: list) -> str:
     """Randomly specifies the suit led when calling the joker."""
     player_num, hand, tricks, suit_led, setup = perspective
     declarer, trump, bid, friend_card, friend = setup
     return random.choice(game.suits)
 
 
-def imma_activate_joker_call(perspective):
+def imma_activate_joker_call(perspective: list) -> bool:
     """Always activates joker call, unless that joker is owned by itself."""
     player_num, hand, tricks, suit_led, setup = perspective
     declarer, trump, bid, friend_card, friend = setup
@@ -106,7 +106,7 @@ def imma_activate_joker_call(perspective):
         return True
 
 
-def introduce_hands(hands, players):
+def introduce_hands(hands: list, players: list) -> None:
     """Introduce the hands of players, revealing and hiding upon Enter."""
     for player in players:
         input("Press Enter to reveal Player {}'s hand.".format(player))
