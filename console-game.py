@@ -4,11 +4,21 @@ import random
 import game
 
 space = 100
+card_mode = 0  # 0 for standard card string, 1 for unicode representations
 
 
-def random_random_player(perspective):
+def card_repr(card: str) -> str:
+    if card_mode == 1:
+        return game.unicode_card(card)
+    elif card_mode == 0:
+        return card
+    else:
+        return card
+
+
+def random_random_player(perspective: list) -> str:
     """A very random AI player of Mighty."""
-    hand, tricks, suit_led, setup = perspective
+    player_num, hand, tricks, suit_led, setup = perspective
     declarer, trump, bid, friend_card, friend = setup
 
     trick_number = len(tricks) - 1
@@ -19,7 +29,7 @@ def random_random_player(perspective):
     return random.choice(valid_moves)
 
 
-def random_random_bidder(hand, prev_trump, prev_bid, minimum_bid):
+def random_random_bidder(hand: list, prev_trump: str, prev_bid: int, minimum_bid: int) -> tuple:
     """A very random AI bidder of Mighty"""
     # Note that you can call one less with a no-trump
     suit_counts = {}
@@ -39,6 +49,8 @@ def random_random_bidder(hand, prev_trump, prev_bid, minimum_bid):
     for bid in range(1, 21):
         if game.is_valid_bid(trump, bid, prev_trump, prev_bid, minimum_bid):
             if random.random() > bid / 21:
+                if random.random() > 0.9:
+                    trump = 'N'
                 return trump, bid
             else:
                 break
@@ -58,6 +70,9 @@ def random_random_exchanger(hand, trump):
 
 
 def mighty_joker_trump_friend_caller(hand, trump):
+    """Calls the friend card, prioritizing the mighty, followed by joker, then a card of the trump suit.
+
+    Doesn't call itself."""
     mighty = game.trump_to_mighty(trump)
     if mighty not in hand:
         return mighty
@@ -73,28 +88,48 @@ def mighty_joker_trump_friend_caller(hand, trump):
         exit(1)
 
 
+def random_random_suit_led_specifier(perspective):
+    """Randomly specifies the suit led when calling the joker."""
+    player_num, hand, tricks, suit_led, setup = perspective
+    declarer, trump, bid, friend_card, friend = setup
+    return random.choice(game.suits)
+
+
+def imma_activate_joker_call(perspective):
+    """Always activates joker call, unless that joker is owned by itself."""
+    player_num, hand, tricks, suit_led, setup = perspective
+    declarer, trump, bid, friend_card, friend = setup
+
+    if game.joker in hand:
+        return False
+    else:
+        return True
+
+
 def introduce_hands(hands, players):
+    """Introduce the hands of players, revealing and hiding upon Enter."""
     for player in players:
         input("Press Enter to reveal Player {}'s hand.".format(player))
-        print(' '.join([game.unicode_card(c) for c in hands[player]]))
+        print(' '.join([card_repr(c) for c in hands[player]]))
         input("Press Enter to clear screen.")
         print('\n' * space)
 
 
 ################### SETUP ####################
 
-
 ai_bidder = random_random_bidder
 ai_miss_deal_caller = imma_call_miss_deal
 ai_exchanger = random_random_exchanger
 ai_friend_caller = mighty_joker_trump_friend_caller
 ai_player = random_random_player
+ai_suit_led_specifier = random_random_suit_led_specifier
+ai_joker_call_activator = imma_activate_joker_call
 
 ##############################################
 
 while True:
     ai_num = '5'
-    ai_num = input("How many AI agents?: ")
+    #ai_num = input("How many AI agents?: ")
     print()
     if ai_num.isdigit() and int(ai_num) in range(6):
         ai_num = int(ai_num)
@@ -243,7 +278,7 @@ while True:
                     break
                 print("Invalid card.")
 
-        print("{} friend called.".format(friend_card))
+        print("{} friend called.".format(card_repr(friend_card)))
         feedback = mighty_game.friend_call(friend_card)
 
     elif call_type == game.GameEngine.calltype['redeal']:
@@ -260,16 +295,11 @@ while True:
         for _ in range(len(mighty_game.current_trick)):
             player = game.next_player(player)
 
-        if player == mighty_game.leader:
-            for p in range(5):
-                if p not in (mighty_game.declarer, mighty_game.friend):
-                    print('Player {}: {} points'.format(p, len(mighty_game.point_cards[p])))
-            print()
             print("Trick #{}".format(len(mighty_game.completed_tricks) + 1))
             print()
 
         for p, c in mighty_game.current_trick:
-            print("Player {}: {}".format(p, c))
+            print("Player {}: {}".format(p, card_repr(c)))
         print()
         print("Player {}'s turn to play.".format(player))
 
@@ -288,12 +318,11 @@ while True:
         suit_led = game.uninit['suit']
         activate_joker_call = False
 
-        print("Player {} plays {}.".format(player, card))
+        print("Player {} plays {}.".format(player, card_repr(card)))
 
         if card == game.joker and player == mighty_game.leader:
             if player in ai_players:
-                # TODO: Create AI for this
-                suit_led = 'S'
+                suit_led = ai_suit_led_specifier(mighty_game.perspective(player))
             else:
                 while True:
                     suit_led = input("Specify the suit led: ")
@@ -303,8 +332,7 @@ while True:
             print("Suit led is {}.".format(suit_led))
         elif card == mighty_game.ripper and player == mighty_game.leader:
             if player in ai_players:
-                # TODO: Create AI for this
-                activate_joker_call = True
+                activate_joker_call = ai_joker_call_activator(mighty_game.perspective(player))
             else:
                 yes_or_no = input("Activate joker call?: ")
                 if yes_or_no.lower() in ('yes', 'y'):
@@ -327,9 +355,22 @@ while True:
 
     if mighty_game.recent_winner != game.uninit['player']:
         print("Trick won by Player {}!".format(mighty_game.recent_winner))
+        for p in range(5):
+            if p not in (mighty_game.declarer, mighty_game.friend):
+                print('Player {}: {} points'.format(p, len(mighty_game.point_cards[p])))
+        print()
 
     print('-------------------------------')
 
 print("The game is over.")
-print(mighty_game.declarer_won)
-print(mighty_game.gamepoints_rewarded)
+print("The bid was {} {}.".format(game.suits_short_to_long[mighty_game.trump], mighty_game.bid))
+print("The Declarer and Friend collected {} points.".format(mighty_game.declarer_team_points))
+print("Did the Declarer win?: {}".format(mighty_game.declarer_won))
+print("The following gamepoints are rewarded to each player:")
+for player in range(len(mighty_game.gamepoints_rewarded)):
+    formated_points = mighty_game.gamepoints_rewarded[player]
+    if formated_points > 0:
+        formated_points = '+' + str(formated_points)
+    else:
+        formated_points = str(formated_points)
+    print("Player {}: {} gamepoints".format(player, formated_points))

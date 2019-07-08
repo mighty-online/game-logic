@@ -25,7 +25,7 @@ cards = ['SA', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'SX', 'SJ', 'SQ',
          'HA', 'H2', 'H3', 'H4', 'H5', 'H6', 'H7', 'H8', 'H9', 'HX', 'HJ', 'HQ', 'HK',
          'CA', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'CX', 'CJ', 'CQ', 'CK'] + [joker]
 
-uninit = {'player': -1, 'suit': '', 'bid': -1, 'card': ''}  # Default uninitialized values.
+uninit = {'player': -1, 'suit': '', 'bid': -1, 'card': '', 'points': -1}  # Default uninitialized values.
 
 
 class GameEngine:
@@ -82,6 +82,7 @@ class GameEngine:
 
         # Game winners and losers, scoring
         self.declarer_won = None
+        self.declarer_team_points = uninit['points']
         self.multiplier = 1
         self.gamepoints_rewarded = [0] * 5
 
@@ -95,7 +96,7 @@ class GameEngine:
 
     def perspective(self, player):
         """Returns the perspective of the given player."""
-        return [self.hands[player], self.tricks(), self.suit_led, self.setup()]
+        return [player, self.hands[player], self.tricks(), self.suit_led, self.setup()]
 
     def bidding(self, bidder: int, trump: str, bid: int) -> int:
         """Processes the bidding phase, one bid per call.
@@ -371,23 +372,23 @@ class GameEngine:
         if gamepoint_transfer_function is None:
             gamepoint_transfer_function = default_gamepoint_transfer
 
-        declarer_team_points = len(self.point_cards[self.declarer])
+        self.declarer_team_points = len(self.point_cards[self.declarer])
 
         if self.friend != -1 and self.friend != self.declarer:
-            declarer_team_points += len(self.point_cards[self.friend])
+            self.declarer_team_points += len(self.point_cards[self.friend])
 
-        self.declarer_won = declarer_team_points >= self.bid
+        self.declarer_won = self.declarer_team_points >= self.bid
 
         if self.friend_card == 'NF':
             self.multiplier *= 2
         if self.trump == 'N':
             self.multiplier *= 2
-        if self.declarer_won and declarer_team_points == 20:  # run
+        if self.declarer_won and self.declarer_team_points == 20:  # run
             self.multiplier *= 2
-        if not self.declarer_won and declarer_team_points < 10:  # back-run
+        if not self.declarer_won and self.declarer_team_points < 10:  # back-run
             self.multiplier *= 2
 
-        unit = gamepoint_transfer_function(self.declarer_won, self.multiplier, self.bid, declarer_team_points,
+        unit = gamepoint_transfer_function(self.declarer_won, self.multiplier, self.bid, self.declarer_team_points,
                                            self.minimum_bid)
 
         # First, the gamepoints are rewarded as if the declarer won.
