@@ -295,6 +295,7 @@ while True:
         for _ in range(len(mighty_game.current_trick)):
             player = game.next_player(player)
 
+        if player == mighty_game.leader:
             print("Trick #{}".format(len(mighty_game.completed_tricks) + 1))
             print()
 
