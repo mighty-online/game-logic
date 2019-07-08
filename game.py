@@ -37,7 +37,7 @@ class GameEngine:
               'redeal', 'play', 'game over']
 
     calltype = {}
-
+    # Jaehyeong Here
     call = ''
     for call in _calls:
         calltype[call] = call
