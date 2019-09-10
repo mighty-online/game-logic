@@ -1,7 +1,7 @@
 """A script to play mighty in the console, using the game.py module."""
 
 import random
-from . import game
+import game
 
 space = 100
 card_mode = 1  # 0 for standard card string, 1 for unicode representations
