@@ -159,6 +159,7 @@ class GameEngine:
                     return 0
 
             if no_pass_player_count == 1:  # Bidding has ended.
+                assert(isinstance(declarer_candidate, int))
                 self.declarer = declarer_candidate  # Declarer is set.
                 self.trump, self.bid = self.bids[declarer_candidate]  # The trump suit and bid are set
 
