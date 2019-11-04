@@ -4,7 +4,7 @@ import random
 import game
 
 space = 100
-card_mode = 1  # 0 for standard card string, 1 for unicode representations
+card_mode = 0  # 0 for standard card string, 1 for unicode representations
 
 
 def card_repr(card: str) -> str:
