@@ -198,7 +198,9 @@ class GameEngine:
         if not all([c in declarer_hand for c in discarding_cards]):
             return 2
 
-        # Discards the three cards into the declarer's point card list. (if point card)
+        # Discards the three cards back into the kitty
+        self.kitty = discarding_cards
+        # Appends the point cards of the discarding cards to the point card list
         for card in discarding_cards:
             declarer_hand.remove(card)
             if is_pointcard(card):
