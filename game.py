@@ -364,12 +364,12 @@ class GameEngine:
 
             # when game is over
             if len(self.completed_tricks) == 10:
-                self.set_winners()
+                self._set_winners()
                 self.next_call = GameEngine.calltype['game over']
 
         return 0
 
-    def set_winners(self, gamepoint_transfer_function=None) -> None:
+    def _set_winners(self, gamepoint_transfer_function=None) -> None:
         """Sets the gamepoints to be rewarded to each player after game ends."""
         if gamepoint_transfer_function is None:
             gamepoint_transfer_function = default_gamepoint_transfer
