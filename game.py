@@ -93,7 +93,7 @@ class GameEngine:
         """Returns previous and current tricks together in a list."""
         return self.completed_tricks + [self.current_trick]
 
-    def perspective(self, player):
+    def perspective(self, player: int) -> list:
         """Returns the perspective of the given player."""
         return [player, self.hands[player], self.tricks(), self.suit_led, self.setup()]
 
