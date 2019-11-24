@@ -53,6 +53,7 @@ class GameEngine:
         # Play related variables
         self.completed_tricks = []
         self.current_trick = []
+        self.previous_suit_leds = []
         self.suit_led = uninit['suit']
         self.recent_winner = uninit['player']
 
@@ -94,7 +95,7 @@ class GameEngine:
 
     def perspective(self, player: int) -> list:
         """Returns the perspective of the given player."""
-        return [player, self.hands[player], self.tricks(), self.suit_led, self.setup()]
+        return [player, self.hands[player], self.tricks(), self.previous_suit_leds, self.suit_led, self.setup()]
 
     def bidding(self, bidder: int, trump: str, bid: int) -> int:
         """Processes the bidding phase, one bid per call.
@@ -109,7 +110,6 @@ class GameEngine:
         Bids are saved in self.bids in player order. Each bid is a tuple of (trump, bid).
         A pass is indicated by a bid of 0.
         """
-
         if self.next_call != GameEngine.calltype['bid']:
             return 1
 
@@ -300,7 +300,7 @@ class GameEngine:
         Returns 2 on invalid player.
         Returns 3 on invalid card.
         Returns 4 on invalid play.
-        Returns 5 on invalid suit_led when joker is played as leader.
+        Returns 5 on invalid suit_led when joker is led.
         """
         if self.next_call != GameEngine.calltype['play']:
             return 1
@@ -347,6 +347,7 @@ class GameEngine:
         if friend_reveal:
             self.friend = player
 
+        # The trick is over
         if len(self.current_trick) == 5:
             self.recent_winner = trick_winner(len(self.completed_tricks), self.current_trick, self.trump)
 
@@ -357,6 +358,7 @@ class GameEngine:
             self.completed_tricks.append(self.current_trick)
             self.current_trick = []
 
+            self.previous_suit_leds.append(self.suit_led)
             self.suit_led = uninit['suit']
 
             self.leader = self.recent_winner
@@ -440,7 +442,10 @@ def next_player(prev_player: int) -> int:
 
 
 def trick_winner(trick_number: int, trick: list, trump: str) -> int:
-    """Returns the winner of the trick, given the trick and the trump suit."""
+    """Returns the winner of the trick, given the trick and the trump suit.
+
+    'trick_number' is 0 based.
+    """
     try:
         assert len(trick[0]) == 2
         assert type(trick[0][0]) == int
@@ -553,22 +558,25 @@ def is_valid_move(trick_number: int, trick: list, suit_led: str, trump: str, han
         else:
             return True
     else:
-        if trick[0][1] == joker_call and joker in hand:
-            if card == joker:
-                return True
-            else:
-                return False
+        if card == trump_to_mighty(trump):
+            return True
         else:
-            if card in (trump_to_mighty(trump), joker):
-                return True
-            else:
-                if any([c[0] == suit_led for c in hand]):  # i.e. if a card of the suit led is in the hand
-                    if card[0] == suit_led:
-                        return True
-                    else:
-                        return False
-                else:
+            if trick[0][1] == joker_call and joker in hand:
+                if card == joker:
                     return True
+                else:
+                    return False
+            else:
+                if card == joker:
+                    return True
+                else:
+                    if any([c[0] == suit_led for c in hand]):  # i.e. if a card of the suit led is in the hand
+                        if card[0] == suit_led:
+                            return True
+                        else:
+                            return False
+                    else:
+                        return True
 
 
 def is_valid_bid(trump: str, bid: int, prev_trump: str, prev_bid: int, minimum_bid: int) -> bool:

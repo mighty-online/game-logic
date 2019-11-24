@@ -91,9 +91,9 @@ When unspecified in code, the below are the expected formats in which game const
  
     Example: `[state, list_of_tricks, setup]`
  
- - **Perspective**: A list of the player's number, player's hand, previous and current tricks, the suit led of the current trick, plus setup.
+ - **Perspective**: A list of the player's number, player's hand, previous and current tricks, previous leading suits, the suit led of the current trick, plus setup.
  
-    Example: `[3, player0_hand, list_of_tricks, 'D', setup]`
+    Example: `[3, player0_hand, list_of_tricks, ['S', 'H'], 'D', setup]`
     
  - **GameEngine**: A class to deal with the dealing and bidding process, as well as the gameplay.
  

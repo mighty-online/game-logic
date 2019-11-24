@@ -18,7 +18,7 @@ def card_repr(card: str) -> str:
 
 def random_random_player(perspective: list) -> str:
     """A very random AI player of Mighty."""
-    player_num, hand, tricks, suit_led, setup = perspective
+    player_num, hand, tricks, previous_suit_leds, suit_led, setup = perspective
     declarer, trump, bid, friend_card, friend = setup
 
     trick_number = len(tricks) - 1
@@ -90,14 +90,14 @@ def mighty_joker_trump_friend_caller(hand: list, trump: str) -> str:
 
 def random_random_suit_led_specifier(perspective: list) -> str:
     """Randomly specifies the suit led when calling the joker."""
-    player_num, hand, tricks, suit_led, setup = perspective
+    player_num, hand, tricks, previous_suit_leds, suit_led, setup = perspective
     declarer, trump, bid, friend_card, friend = setup
     return random.choice(game.suits)
 
 
 def imma_activate_joker_call(perspective: list) -> bool:
     """Always activates joker call, unless that joker is owned by itself."""
-    player_num, hand, tricks, suit_led, setup = perspective
+    player_num, hand, tricks, previous_suit_leds, suit_led, setup = perspective
     declarer, trump, bid, friend_card, friend = setup
 
     if game.joker in hand:
