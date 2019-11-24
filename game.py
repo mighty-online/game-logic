@@ -82,7 +82,6 @@ class GameEngine:
         # Game winners and losers, scoring
         self.declarer_won = None
         self.declarer_team_points = uninit['points']
-        self.multiplier = 1
         self.gamepoints_rewarded = [0] * 5
 
     def setup(self) -> list:
@@ -159,7 +158,7 @@ class GameEngine:
                     return 0
 
             if no_pass_player_count == 1:  # Bidding has ended.
-                assert(isinstance(declarer_candidate, int))
+                assert (isinstance(declarer_candidate, int))
                 self.declarer = declarer_candidate  # Declarer is set.
                 self.trump, self.bid = self.bids[declarer_candidate]  # The trump suit and bid are set
 
@@ -372,7 +371,7 @@ class GameEngine:
     def _set_winners(self, gamepoint_transfer_function=None) -> None:
         """Sets the gamepoints to be rewarded to each player after game ends."""
         if gamepoint_transfer_function is None:
-            gamepoint_transfer_function = default_gamepoint_transfer
+            gamepoint_transfer_function = default_gamepoint_transfer_unit
 
         self.declarer_team_points = len(self.point_cards[self.declarer])
 
@@ -381,43 +380,57 @@ class GameEngine:
 
         self.declarer_won = self.declarer_team_points >= self.bid
 
-        if self.friend_card == 'NF':
-            self.multiplier *= 2
-        if self.trump == 'N':
-            self.multiplier *= 2
-        if self.declarer_won and self.declarer_team_points == 20:  # run
-            self.multiplier *= 2
-        if not self.declarer_won and self.declarer_team_points < 10:  # back-run
-            self.multiplier *= 2
+        rewards = gamepoint_rewards(self.declarer_team_points, self.declarer, self.friend, self.bid, self.trump,
+                                    self.friend_card, self.minimum_bid, gamepoint_transfer_function)
 
-        unit = gamepoint_transfer_function(self.declarer_won, self.multiplier, self.bid, self.declarer_team_points,
-                                           self.minimum_bid)
-
-        # First, the gamepoints are rewarded as if the declarer won.
-        for player in range(5):
-            if player == self.declarer:
-                self.gamepoints_rewarded[player] = unit * 2
-            elif player == self.friend:
-                self.gamepoints_rewarded[player] = unit
-            else:
-                self.gamepoints_rewarded[player] = - unit
-
-        # Then, if the declarer did not win, all rewarded gamepoints are flipped.
-        if not self.declarer_won:
-            for i in range(len(self.gamepoints_rewarded)):
-                self.gamepoints_rewarded[i] *= -1
+        self.gamepoints_rewarded = rewards
 
 
-def default_gamepoint_transfer(declarer_won: bool, multiplier: int, bid: int, declarer_cards_won: int,
-                               lower_bid_bound) -> int:
+def default_gamepoint_transfer_unit(declarer_won: bool, multiplier: int, bid: int, declarer_cards_won: int,
+                                    minimum_bid) -> int:
     """Returns the unit of gamepoint transfer.
 
     The declarer wins (or loses) twice the unit.
     The friend and defenders win (or lose) the unit amount of gamepoint."""
     if declarer_won:
-        return multiplier * (declarer_cards_won - bid) + (bid - lower_bid_bound) * 2
+        return multiplier * (declarer_cards_won - bid) + (bid - minimum_bid) * 2
     else:
         return multiplier * (bid - declarer_cards_won)
+
+
+def gamepoint_rewards(declarer_team_points: int, declarer: int, friend: int, bid: int, trump: str, friend_card: str,
+                      minimum_bid: int, gamepoint_transfer_unit_function=default_gamepoint_transfer_unit) -> list:
+    """Returns the gamepoint rewards to each player."""
+    declarer_won = declarer_team_points >= bid
+
+    multiplier = 1
+    if friend_card == 'NF':
+        multiplier *= 2
+    if trump == 'N':
+        multiplier *= 2
+    if declarer_won and declarer_team_points == 20:  # run
+        multiplier *= 2
+    if not declarer_won and declarer_team_points < 10:  # back-run
+        multiplier *= 2
+
+    unit = gamepoint_transfer_unit_function(declarer_won, multiplier, bid, declarer_team_points, minimum_bid)
+
+    rewards = [0] * 5
+    # First, the gamepoints are rewarded as if the declarer won.
+    for player in range(5):
+        if player == declarer:
+            rewards[player] = unit * 2
+        elif player == friend:
+            rewards[player] = unit
+        else:
+            rewards[player] = - unit
+
+    # Then, if the declarer did not win, all rewarded gamepoints are flipped.
+    if not declarer_won:
+        for i in range(len(rewards)):
+            rewards[i] *= -1
+
+    return rewards
 
 
 # Player number is a value in range(5)
