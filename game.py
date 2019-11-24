@@ -470,6 +470,7 @@ def is_pointcard(card: str) -> bool:
 
 def unicode_card(card: str) -> str:
     """Converts standard card representation to unicode representation."""
+    assert card in cards
     unicode_cards = '🂡🂢🂣🂤🂥🂦🂧🂨🂩🂪🂫🂭🂮🃁🃂🃃🃄🃅🃆🃇🃈🃉🃊🃋🃍🃎🂱🂲🂳🂴🂵🂶🂷🂸🂹🂺🂻🂽🂾🃑🃒🃓🃔🃕🃖🃗🃘🃙🃚🃛🃝🃞🃏'
     return unicode_cards[cards.index(card)]
 
