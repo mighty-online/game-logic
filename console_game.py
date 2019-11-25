@@ -1,7 +1,7 @@
 """A script to play mighty in the console, using the game.py module."""
 
 import random
-import game
+from . import game
 from time import time
 
 space = 100
@@ -160,6 +160,11 @@ introduce_hands(mighty_game.hands, human_players)
 
 # Here starts the game loop.
 while True:
+    ################################### TESTING ############################
+    import tempest
+    print(repr(tempest.Inferences(mighty_game.perspective(0))))
+    input("\nWAITING...")
+    ########################################################################
     call_type = mighty_game.next_call
     if call_type == game.GameEngine.calltype['bid']:
         print("Player {}'s turn to make a bid.".format(mighty_game.next_bidder))
