@@ -53,7 +53,7 @@ class GameEngine:
         # Play related variables
         self.completed_tricks = []
         self.current_trick = []
-        self.previous_suit_leds = []
+        self.previous_suit_leds = []  # necessary to prevent the suit led information of the Joker from being lost
         self.suit_led = uninit['suit']
         self.recent_winner = uninit['player']
 
@@ -95,7 +95,7 @@ class GameEngine:
 
     def perspective(self, player: int) -> list:
         """Returns the perspective of the given player."""
-        return [player, self.hands[player], self.tricks(), self.previous_suit_leds, self.suit_led, self.setup()]
+        return [player, self.hands[player][:], self.tricks(), self.previous_suit_leds[:], self.suit_led, self.setup()]
 
     def bidding(self, bidder: int, trump: str, bid: int) -> int:
         """Processes the bidding phase, one bid per call.
