@@ -301,6 +301,7 @@ class GameEngine:
         Returns 3 on invalid card.
         Returns 4 on invalid play.
         Returns 5 on invalid suit_led when joker is led.
+        Returns 6 on invalid Joker Call.
         """
         if self.next_call != GameEngine.calltype['play']:
             return 1
@@ -332,7 +333,10 @@ class GameEngine:
                 suit_led = card[0]
                 if card == self.ripper:
                     if activate_joker_call:
-                        card = joker_call  # the joker call substitution
+                        if len(self.completed_tricks) != 0:
+                            card = joker_call  # the joker call substitution
+                        else:
+                            return 6
 
             self.suit_led = suit_led
 
@@ -561,7 +565,7 @@ def is_valid_move(trick_number: int, trick: list, suit_led: str, trump: str, han
         if card == trump_to_mighty(trump):
             return True
         else:
-            if trick[0][1] == joker_call and joker in hand:
+            if trick[0][1] == joker_call and joker in hand and trick_number != 0:
                 if card == joker:
                     return True
                 else:
