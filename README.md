@@ -23,9 +23,7 @@ Ambiguous terminology are defined as below.
  
  - **Kitty**: The three cards dealt face down at the start of the game.
  
- - **State**: The current state of the game, consisting of the hands of the players and the point cards obtained by
- each player.
- 
+ - **State**: The current state of the game. [WORK NEEDS DONE HERE]
  - **Game**: The state plus information about previous plays, as well as the trump suit, bid, and friend card.
  
  - **Perspective**: All information a player in the game can obtain.
@@ -77,10 +75,6 @@ When unspecified in code, the below are the expected formats in which game const
  
     Example: `[hand0, hand1, hand2, hand3, hand4]`, where each element of the list is a hand.
     
- - **State**: A nested list of the list 'hands', and a list of list of point cards obtained by each player.
- 
-    Example: `[[hand0, ..., hand4], [points0, ..., points4]]`
-    
  - **Setup**: A list containing the declarer, trump suit, bid, friend card and friend.
  
     Example: `[2, 'D', 15, 'SA', 3]`, `[2, 'D', 15, 'SA', -1]` 
@@ -91,9 +85,9 @@ When unspecified in code, the below are the expected formats in which game const
  
     Example: `[state, list_of_tricks, setup]`
  
- - **Perspective**: A list of the player's number, player's hand, previous and current tricks, previous leading suits, the suit led of the current trick, plus setup.
+ - **Perspective**: [IT IS NOW A CLASS]
  
-    Example: `[3, player0_hand, list_of_tricks, ['S', 'H'], 'D', setup]`
+    Example: [CREATE EXAMPLE LATER]
     
  - **GameEngine**: A class to deal with the dealing and bidding process, as well as the gameplay.
  

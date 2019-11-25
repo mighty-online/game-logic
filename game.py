@@ -28,6 +28,20 @@ cards = ['SA', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'SX', 'SJ', 'SQ',
 uninit = {'player': -1, 'suit': '', 'bid': -1, 'card': '', 'points': -1}  # Default uninitialized values.
 
 
+class Perspective:
+    """The Perspective class, containing all information from the perspective of a single player."""
+
+    def __init__(self, player, hand, tricks, previous_suit_leds, suit_led, setup):
+        self.player = player
+        self.hand = hand
+        self.tricks = tricks
+        self.previous_suit_leds = previous_suit_leds
+        self.suit_led = suit_led
+        self.setup = setup
+
+        self.declarer, self.trump, self.bid, self.friend_card, self.friend = self.setup
+
+
 class GameEngine:
     """The class to wrap all the data manipulation and processes for a game."""
 
@@ -93,9 +107,13 @@ class GameEngine:
         """Returns previous and current tricks together in a list."""
         return self.completed_tricks + [self.current_trick]
 
-    def perspective(self, player: int) -> list:
+    def _perspective_data(self, player: int) -> tuple:
+        """Packages the perspective data of the given player."""
+        return player, self.hands[player][:], self.tricks(), self.previous_suit_leds[:], self.suit_led, self.setup()
+
+    def perspective(self, player: int) -> Perspective:
         """Returns the perspective of the given player."""
-        return [player, self.hands[player][:], self.tricks(), self.previous_suit_leds[:], self.suit_led, self.setup()]
+        return Perspective(*self._perspective_data(player))
 
     def bidding(self, bidder: int, trump: str, bid: int) -> int:
         """Processes the bidding phase, one bid per call.
@@ -610,3 +628,4 @@ def is_valid_bid(trump: str, bid: int, prev_trump: str, prev_bid: int, minimum_b
         return True
     else:
         return False
+

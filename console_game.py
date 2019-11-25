@@ -17,15 +17,15 @@ def card_repr(card: str) -> str:
         return card
 
 
-def random_random_player(perspective: list) -> str:
+def random_random_player(perspective: game.Perspective) -> str:
     """A very random AI player of Mighty."""
-    player_num, hand, tricks, previous_suit_leds, suit_led, setup = perspective
-    declarer, trump, bid, friend_card, friend = setup
+    trick_number = len(perspective.tricks) - 1
+    trick = perspective.tricks[-1]
 
-    trick_number = len(tricks) - 1
-    trick = tricks[-1]
-
-    valid_moves = [c for c in hand if game.is_valid_move(trick_number, trick, suit_led, trump, hand, c)]
+    valid_moves = [c for c in perspective.hand if game.is_valid_move(trick_number, trick,
+                                                                     perspective.suit_led,
+                                                                     perspective.trump,
+                                                                     perspective.hand, c)]
 
     return random.choice(valid_moves)
 
@@ -89,19 +89,14 @@ def mighty_joker_trump_friend_caller(hand: list, trump: str) -> str:
         exit(1)
 
 
-def random_random_suit_led_specifier(perspective: list) -> str:
+def random_random_suit_led_specifier(perspective: game.Perspective) -> str:
     """Randomly specifies the suit led when calling the joker."""
-    player_num, hand, tricks, previous_suit_leds, suit_led, setup = perspective
-    declarer, trump, bid, friend_card, friend = setup
     return random.choice(game.suits)
 
 
-def imma_activate_joker_call(perspective: list) -> bool:
+def imma_activate_joker_call(perspective: game.Perspective) -> bool:
     """Always activates joker call, unless that joker is owned by itself."""
-    player_num, hand, tricks, previous_suit_leds, suit_led, setup = perspective
-    declarer, trump, bid, friend_card, friend = setup
-
-    if game.joker in hand:
+    if game.joker in perspective.hand:
         return False
     else:
         return True
