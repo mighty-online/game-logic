@@ -2,6 +2,7 @@
 
 import random
 import game
+from time import time
 
 space = 100
 card_mode = 0  # 0 for standard card string, 1 for unicode representations
@@ -135,6 +136,9 @@ while True:
         ai_num = int(ai_num)
         break
     print("Invalid input.")
+
+if ai_num == 5:  # Just to see how long a randomized game lasts.
+    start = time()
 
 ai_players_seed = [True] * ai_num + [False] * (5 - ai_num)
 random.shuffle(ai_players_seed)
@@ -375,3 +379,7 @@ for player in range(len(mighty_game.gamepoints_rewarded)):
     else:
         formated_points = str(formated_points)
     print("Player {}: {} gamepoints".format(player, formated_points))
+
+if ai_num == 5:
+    end = time()
+    print(f"The 5 AI game took {end - start} seconds to complete.")
