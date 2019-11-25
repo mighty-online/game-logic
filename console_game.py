@@ -331,7 +331,7 @@ while True:
                         break
                     print("Invalid suit.")
             print("Suit led is {}.".format(suit_led))
-        elif card == mighty_game.ripper and player == mighty_game.leader:
+        elif card == mighty_game.ripper and player == mighty_game.leader and len(mighty_game.completed_tricks) != 0:
             if player in ai_players:
                 activate_joker_call = ai_joker_call_activator(mighty_game.perspective(player))
             else:

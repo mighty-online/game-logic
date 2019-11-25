@@ -331,12 +331,12 @@ class GameEngine:
                     return 5
             else:
                 suit_led = card[0]
-                if card == self.ripper:
-                    if activate_joker_call:
-                        if len(self.completed_tricks) != 0:
-                            card = joker_call  # the joker call substitution
-                        else:
-                            return 6
+                
+        if activate_joker_call:
+            if is_leader and card == self.ripper and len(self.completed_tricks) != 0:  # Cannot play Joker Call on first trick.
+                card = joker_call  # the joker call substitution
+            else:
+                return 6
 
             self.suit_led = suit_led
 
@@ -556,9 +556,15 @@ def is_valid_move(trick_number: int, trick: list, suit_led: str, trump: str, han
     if card not in hand:
         return False
     if len(trick) == 0:
-        # Cannot play a card of the trump suit as the first card of the game
-        if trick_number == 0 and card[0] == trump:
-            return False
+        if trick_number == 0:
+            # Cannot play a card of the trump suit as the first card of the game.
+            if card[0] == trump:
+                return False
+            # Cannot activate Joker Call during the first trick.
+            elif card == joker_call:
+                return False
+            else:
+                return True
         else:
             return True
     else:
