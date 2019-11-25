@@ -331,9 +331,10 @@ class GameEngine:
                     return 5
             else:
                 suit_led = card[0]
-                
+
         if activate_joker_call:
-            if is_leader and card == self.ripper and len(self.completed_tricks) != 0:  # Cannot play Joker Call on first trick.
+            # Cannot play Joker Call on first trick.
+            if is_leader and card == self.ripper and len(self.completed_tricks) != 0:
                 card = joker_call  # the joker call substitution
             else:
                 return 6
