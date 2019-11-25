@@ -1,7 +1,7 @@
 """A script to play mighty in the console, using the game.py module."""
 
 import random
-from . import game
+import game
 from time import time
 
 space = 100
