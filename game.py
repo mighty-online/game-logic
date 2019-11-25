@@ -125,7 +125,7 @@ class GameEngine:
         Returns 3 on invalid trump.
         Returns 4 on invalid bid.
 
-        Bids are saved in self.bids in player order. Each bid is a tuple of (trump, bid).
+        Bids are saved in self.bids in player order, in the form of (trump, bid).
         A pass is indicated by a bid of 0.
         """
         if self.next_call != GameEngine.calltype['bid']:
@@ -318,8 +318,9 @@ class GameEngine:
         Returns 2 on invalid player.
         Returns 3 on invalid card.
         Returns 4 on invalid play.
-        Returns 5 on invalid suit_led when joker is led.
-        Returns 6 on invalid Joker Call.
+        Returns 5 on invalid Joker Call.
+        Returns 6 on invalid suit_led when joker is led.
+        Returns 7 on unexpected suit_led value.
         """
         if self.next_call != GameEngine.calltype['play']:
             return 1
@@ -343,21 +344,24 @@ class GameEngine:
         else:
             friend_reveal = False
 
-        if is_leader:
-            if card == joker:
-                if suit_led not in suits:
-                    return 5
-            else:
-                suit_led = card[0]
-
         if activate_joker_call:
             # Cannot play Joker Call on first trick.
             if is_leader and card == self.ripper and len(self.completed_tricks) != 0:
                 card = joker_call  # the joker call substitution
             else:
-                return 6
+                return 5
+
+        if is_leader:
+            if card == joker:
+                if suit_led not in suits:
+                    return 6
+            else:
+                suit_led = card[0]
 
             self.suit_led = suit_led
+        else:
+            if suit_led != uninit['suit']:
+                return 7
 
         if not is_valid_move(len(self.completed_tricks), self.current_trick, self.suit_led, self.trump,
                              self.hands[player], card):
@@ -628,4 +632,3 @@ def is_valid_bid(trump: str, bid: int, prev_trump: str, prev_bid: int, minimum_b
         return True
     else:
         return False
-
