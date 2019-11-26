@@ -31,10 +31,11 @@ uninit = {'player': -1, 'suit': '', 'bid': -1, 'card': '', 'points': -1}  # Defa
 class Perspective:
     """The Perspective class, containing all information from the perspective of a single player."""
 
-    def __init__(self, player, hand, tricks, previous_suit_leds, suit_led, setup):
+    def __init__(self, player, hand, completed_tricks, current_trick, previous_suit_leds, suit_led, setup):
         self.player = player
         self.hand = hand
-        self.tricks = tricks
+        self.completed_tricks = completed_tricks
+        self.current_trick = current_trick
         self.previous_suit_leds = previous_suit_leds
         self.suit_led = suit_led
         self.setup = setup
@@ -103,13 +104,10 @@ class GameEngine:
         """Returns the setup information of the game."""
         return [self.declarer, self.trump, self.bid, self.friend_card, self.friend]
 
-    def tricks(self):
-        """Returns previous and current tricks together in a list."""
-        return self.completed_tricks + [self.current_trick]
-
-    def _perspective_data(self, player: int) -> tuple:
+    def _perspective_data(self, player: int) -> list:
         """Packages the perspective data of the given player."""
-        return player, self.hands[player][:], self.tricks(), self.previous_suit_leds[:], self.suit_led, self.setup()
+        return [player, self.hands[player][:], self.completed_tricks,
+                self.current_trick, self.previous_suit_leds[:], self.suit_led, self.setup()]
 
     def perspective(self, player: int) -> Perspective:
         """Returns the perspective of the given player."""

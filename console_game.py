@@ -19,8 +19,8 @@ def card_repr(card: str) -> str:
 
 def random_random_player(perspective: game.Perspective) -> str:
     """A very random AI player of Mighty."""
-    trick_number = len(perspective.tricks) - 1
-    trick = perspective.tricks[-1]
+    trick_number = len(perspective.completed_tricks)
+    trick = perspective.current_trick
 
     valid_moves = [c for c in perspective.hand if game.is_valid_move(trick_number, trick,
                                                                      perspective.suit_led,
