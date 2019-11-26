@@ -612,6 +612,19 @@ def is_valid_move(trick_number: int, trick: list, suit_led: str, trump: str, han
                         return True
 
 
+def legal_moves(trick_number: int, trick: list, suit_led: str, trump: str, hand: list) -> list:
+    moves = []
+    ripper = trump_to_ripper(trump)
+    for card in hand:
+        if is_valid_move(trick_number, trick, suit_led, trump, hand, card):
+            moves.append(card)
+        # Joker Call is also a valid move if the below conditions hold
+        if card == ripper:
+            if is_valid_move(trick_number, trick, suit_led, trump, hand, joker_call):
+                moves.append(joker_call)
+    return moves
+
+
 def is_valid_bid(trump: str, bid: int, prev_trump: str, prev_bid: int, minimum_bid: int) -> bool:
     """Given information about a bid and the previous one made, returns whether the bid is valid.
 
