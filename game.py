@@ -1,15 +1,9 @@
-"""The game logic module of Mighty, built for the Mighty-Online project."""
+"""The game module of Mighty, built for the Mighty-Online project.
+
+This module contains all the underlying classes needed for playing a game of mighty.
+"""
 
 import random
-
-__author__ = "Jake Hyun (SyphonArch)"
-__copyright__ = "Copyright 2019, The Mighty-Online Team"
-__credits__ = ["Jake Hyun (SyphonArch)"]
-__license__ = "MIT"
-__version__ = "0.2.0"
-__maintainer__ = "Jake Hyun (SyphonArch)"
-__email__ = "jake.hyun@hotmail.com"
-__status__ = "Development"
 
 suits = ['S', 'D', 'H', 'C']
 no_trump = 'N'
@@ -25,7 +19,139 @@ cards = ['SA', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'SX', 'SJ', 'SQ',
          'HA', 'H2', 'H3', 'H4', 'H5', 'H6', 'H7', 'H8', 'H9', 'HX', 'HJ', 'HQ', 'HK',
          'CA', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9', 'CX', 'CJ', 'CQ', 'CK'] + [joker]
 
-uninit = {'player': -1, 'suit': '', 'bid': -1, 'card': '', 'points': -1}  # Default uninitialized values.
+
+class Suit:
+    """The Suit class, for suits.
+
+    Includes the no-trump suit.
+    """
+    _suits_short = ['N', 'C', 'D', 'H', 'S']
+    _suits_long = ['no-trump', 'Spades', 'Diamonds', 'Hearts', 'Clubs']
+
+    def __init__(self, val: int):
+        """0 for no-trump; 1, 2, 3, 4 for C, D, H, S."""
+        assert 0 <= val < len(Suit._suits_short)
+        self.val = val
+
+    def short(self):
+        return Suit._suits_short[self.val]
+
+    def long(self):
+        return Suit._suits_long[self.val]
+
+    def __repr__(self):
+        return f'<{self.long()}>'
+
+    def __eq__(self, other):
+        return self.val == other.val
+
+
+class Rank:
+    """The Rank class, for ranks.
+
+    Includes a no-rank rank for the joker.
+    """
+    _ranks_short = ['N'] + ['A'] + ['2', '3', '4', '5', '6', '7', '8', '9'] + ['10', 'J', 'Q', 'K']  # 'N' for no-rank
+
+    def __init__(self, val: int):
+        """0 for no-rank, 1-13 for Ace to King."""
+        assert 0 <= val < len(Rank._ranks_short)
+        self.val = val
+
+    def is_pointcard_rank(self):
+        return self.val in [1, 10, 11, 12, 13]
+
+    def short(self):
+        return Rank._ranks_short[self.val]
+
+    def __repr__(self):
+        return f'{{{self.short()}}}'
+
+    def __eq__(self, other):
+        return self.val == other.val
+
+
+class Card:
+    """The Card class, for cards."""
+
+    def __init__(self, suit_val: int, rank_val: int):
+        if suit_val == 0:  # if the card is a no-trump
+            assert rank_val == 0  # the card must be a joker, hence a no-rank
+        else:
+            assert rank_val != 0  # else the rank cannot be a no-rank
+
+        self.suit = Suit(suit_val)
+        self.rank = Rank(rank_val)
+
+    def is_pointcard(self):
+        return self.rank.is_pointcard_rank()
+
+    def unicode(self):
+        """Converts standard card representation to unicode representation."""
+        if self.suit.val == 0:
+            assert self.rank.val == 0
+            return '🃏'
+        else:
+            unicode_cards = ['🃑🃒🃓🃔🃕🃖🃗🃘🃙🃚🃛🃝🃞',
+                             '🃁🃂🃃🃄🃅🃆🃇🃈🃉🃊🃋🃍🃎',
+                             '🂱🂲🂳🂴🂵🂶🂷🂸🂹🂺🂻🂽🂾',
+                             '🂡🂢🂣🂤🂥🂦🂧🂨🂩🂪🂫🂭🂮']
+            return unicode_cards[self.suit.val][self.rank.val - 1]
+
+    def __repr__(self):
+        if self.suit.val != 0:
+            return f'[{self.suit.short()}{self.rank.short()}]'
+        else:
+            assert self.rank.val == 0
+            return '[JK]'
+
+    def __eq__(self, other):
+        return self.suit == other.suit and self.rank == other.rank
+
+
+suits_ = [Suit(1), Suit(2), Suit(3), Suit(4)]  # TODO
+clubs, diamonds, hearts, spades = suits_
+no_trump_ = Suit(0)
+joker_ = Card(0, 0)
+cards_ = [Card(suit_val, rank_val) for suit_val in range(1, 5) for rank_val in range(1, 14)] + [joker_]
+
+
+class Play:
+    """The class for a regular play made in the 'play' phase of the game."""
+
+    def __init__(self, player, card):
+        self.player = player
+        self.card = card
+        self.suit_led = None
+        self.is_joker_call = False
+
+    def __repr__(self):
+        rep_str = f"[Player {self.player} plays {self.card}]"
+        if self.suit_led is not None:
+            rep_str += f'[{self.suit_led.short()} led]'
+        if self.is_joker_call:
+            rep_str += '[JC]'
+        return rep_str
+
+
+class LeadingPlay(Play):
+    """The class for a leading play."""
+
+    def __init__(self, player, card, suit_led=None):
+        super().__init__(player, card)
+        if card == joker_:
+            assert isinstance(suit_led, Suit)
+            self.suit_led = suit_led
+        else:
+            self.suit_led = self.card.suit
+
+
+class JokerCall(LeadingPlay):
+    """The class for a joker-call play."""
+
+    def __init__(self, player, card):
+        super().__init__(player, card)
+        self.is_joker_call = True
 
 
 class Perspective:
@@ -62,22 +188,22 @@ class GameEngine:
         self.hands, self.kitty = deal_deck()
         self.point_cards = [[] for _ in range(5)]
 
-        self.mighty = uninit['card']
-        self.ripper = uninit['card']
+        self.mighty = None
+        self.ripper = None
 
         # Play related variables
         self.completed_tricks = []
         self.current_trick = []
         self.previous_suit_leds = []  # necessary to prevent the suit led information of the Joker from being lost
-        self.suit_led = uninit['suit']
-        self.recent_winner = uninit['player']
+        self.suit_led = None
+        self.recent_winner = None
 
         # Declarer, trump, bid, [friend, friend card]
-        self.declarer = uninit['player']
-        self.trump = uninit['suit']
-        self.bid = uninit['bid']
-        self.friend = uninit['player']
-        self.friend_card = uninit['card']
+        self.declarer = None
+        self.trump = None
+        self.bid = None
+        self.friend = None
+        self.friend_card = None
 
         # Hand confirmation of players. (i.e. no miss-deal)
         self.hand_confirmed = [False for _ in range(5)]
@@ -85,19 +211,19 @@ class GameEngine:
         # Bidding related variables.
         self.next_bidder = 0
         self.minimum_bid = 13
-        self.highest_bid = uninit['bid']
-        self.trump_candidate = uninit['suit']
-        self.bids = [(uninit['suit'], uninit['bid']) for _ in range(5)]
+        self.highest_bid = None
+        self.trump_candidate = None
+        self.bids = [(None, None) for _ in range(5)]
 
         # Stores what call type should come next
         self.next_call = GameEngine.calltype['bid']
 
         # The leader of the next trick
-        self.leader = uninit['player']
+        self.leader = None
 
         # Game winners and losers, scoring
         self.declarer_won = None
-        self.declarer_team_points = uninit['points']
+        self.declarer_team_points = None
         self.gamepoints_rewarded = [0] * 5
 
     def setup(self) -> list:
@@ -129,7 +255,7 @@ class GameEngine:
         if self.next_call != GameEngine.calltype['bid']:
             return 1
 
-        if self.next_bidder != uninit['player']:  # Checks if the bidder is valid (i.e. is the expected one)
+        if self.next_bidder is not None:  # Checks if the bidder is valid (i.e. is the expected one)
             if self.next_bidder != bidder:
                 return 2
         else:  # If it is the first bid made, sets the next bidder as the bidder given in argument
@@ -139,7 +265,8 @@ class GameEngine:
                 return 2
 
         if bid == 0:
-            self.bids[bidder] = (uninit['suit'], 0)
+            # noinspection PyTypeChecker
+            self.bids[bidder] = (None, 0)
         else:
             if trump not in suits + ['N']:
                 return 3
@@ -147,6 +274,7 @@ class GameEngine:
             if not is_valid_bid(trump, bid, self.trump_candidate, self.highest_bid, self.minimum_bid):
                 return 4
 
+            # noinspection PyTypeChecker
             self.bids[bidder] = (trump, bid)
             self.highest_bid = bid
             self.trump_candidate = trump
@@ -155,12 +283,14 @@ class GameEngine:
             if bid == 20 and trump == 'N':
                 for player in range(5):
                     if player != bidder:
-                        self.bids[player] = (uninit['suit'], 0)
+                        # noinspection PyTypeChecker
+                        self.bids[player] = (None, 0)
 
-        if all([b[1] != uninit['bid'] for b in self.bids]):  # i.e. if everyone has passed or made a bid.
+        if all([b[1] is not None for b in self.bids]):  # i.e. if everyone has passed or made a bid.
             no_pass_player_count = 0
             declarer_candidate = None
             for player in range(len(self.bids)):
+                # noinspection PyTypeChecker
                 if self.bids[player][1] > 0:
                     declarer_candidate = player
                     no_pass_player_count += 1
@@ -168,7 +298,7 @@ class GameEngine:
             if no_pass_player_count == 0:  # i.e. everyone has passed.
                 if self.minimum_bid == 13:
                     self.minimum_bid -= 1
-                    self.bids = [(uninit['suit'], uninit['bid']) for _ in range(5)]
+                    self.bids = [(None, None) for _ in range(5)]
                 else:  # If everyone passes even with 12 as the lower bound, there should be a redeal.
                     self.next_call = GameEngine.calltype['redeal']
                     return 0
@@ -307,7 +437,7 @@ class GameEngine:
         self.leader = self.declarer
         return 0
 
-    def play(self, player: int, card: str, suit_led=uninit['suit'], activate_joker_call=False) -> int:
+    def play(self, player: int, card: str, suit_led=None, activate_joker_call=False) -> int:
         """Given the player and the card played by the player, processes the trick.
 
         Returns 0 on valid call.
@@ -326,7 +456,7 @@ class GameEngine:
         is_leader = len(self.current_trick) == 0
 
         if is_leader:
-            self.recent_winner = uninit['player']
+            self.recent_winner = None
             if player != self.leader:
                 return 2
         else:
@@ -358,7 +488,7 @@ class GameEngine:
 
             self.suit_led = suit_led
         else:
-            if suit_led != uninit['suit']:
+            if suit_led is not None:
                 return 7
 
         if not is_valid_move(len(self.completed_tricks), self.current_trick, self.suit_led, self.trump,
@@ -384,7 +514,7 @@ class GameEngine:
             self.current_trick = []
 
             self.previous_suit_leds.append(self.suit_led)
-            self.suit_led = uninit['suit']
+            self.suit_led = None
 
             self.leader = self.recent_winner
 
@@ -402,7 +532,7 @@ class GameEngine:
 
         self.declarer_team_points = len(self.point_cards[self.declarer])
 
-        if self.friend != -1 and self.friend != self.declarer:
+        if self.friend is not None and self.friend != self.declarer:
             self.declarer_team_points += len(self.point_cards[self.friend])
 
         self.declarer_won = self.declarer_team_points >= self.bid
@@ -539,6 +669,22 @@ def deal_deck() -> tuple:
     return hands, kitty  # will contain 5 hands plus the kitty
 
 
+def deal_deck_() -> tuple:
+    """Randomly shuffles and deals the deck to 5 players and the kitty."""
+    hands = []
+    deck = cards_[:]
+    random.shuffle(deck)
+
+    # creates the hand of each player
+    for p in range(5):
+        hands.append(deck[10 * p: 10 * p + 10])
+
+    # creates the kitty
+    kitty = deck[50:]
+
+    return hands, kitty  # will contain 5 hands plus the kitty
+
+
 def trump_to_mighty(trump: str) -> str:
     """Given the trump suit, returns the mighty card."""
     if trump == 'S':
@@ -628,7 +774,7 @@ def is_valid_bid(trump: str, bid: int, prev_trump: str, prev_bid: int, minimum_b
 
     If no previous bid has been made, the argument to prev_trump should be uninit['suit'].
     """
-    if prev_trump == uninit['suit']:  # i.e. if there is no previous bid
+    if prev_trump is None:  # i.e. if there is no previous bid
         if trump == 'N':
             lower_bound = minimum_bid - 1
         else:

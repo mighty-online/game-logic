@@ -42,7 +42,7 @@ def random_random_bidder(hand: list, prev_trump: str, prev_bid: int, minimum_bid
         suit_counts[suit] = count
 
     maximum_suit_num = max(suit_counts.values())
-    trump = game.uninit['suit']
+    trump = None
     for suit in suit_counts:
         if suit_counts[suit] == maximum_suit_num:
             trump = suit
@@ -56,7 +56,7 @@ def random_random_bidder(hand: list, prev_trump: str, prev_bid: int, minimum_bid
             else:
                 break
 
-    return game.uninit['suit'], 0
+    return None, 0
 
 
 def imma_call_miss_deal(hand: list, trump: str) -> bool:
@@ -154,22 +154,24 @@ print()
 # Initiating the game object.
 mighty_game = game.GameEngine()
 feedback = -1
-final_trump = game.uninit['suit']
+final_trump = None
 
 introduce_hands(mighty_game.hands, human_players)
 
 # Here starts the game loop.
 while True:
+    '''
     ################################### TESTING ############################
     import tempest
     print(repr(tempest.Inferences(mighty_game.perspective(0))))
     input("\nWAITING...")
     ########################################################################
+    '''
     call_type = mighty_game.next_call
     if call_type == game.GameEngine.calltype['bid']:
         print("Player {}'s turn to make a bid.".format(mighty_game.next_bidder))
 
-        if mighty_game.highest_bid == game.uninit['bid']:
+        if mighty_game.highest_bid is None:
             lower_bound = mighty_game.minimum_bid
         else:
             lower_bound = mighty_game.highest_bid + 1
@@ -320,7 +322,7 @@ while True:
                     break
                 print("Invalid play.")
 
-        suit_led = game.uninit['suit']
+        suit_led = None
         activate_joker_call = False
 
         print("Player {} plays {}.".format(player, card_repr(card)))
@@ -358,7 +360,7 @@ while True:
         print('Calltype: {}, Error #{}'.format(mighty_game.next_call, feedback))
         exit(1)
 
-    if mighty_game.recent_winner != game.uninit['player']:
+    if mighty_game.recent_winner is not None:
         print("Trick won by Player {}!".format(mighty_game.recent_winner))
         for p in range(5):
             if p not in (mighty_game.declarer, mighty_game.friend):
