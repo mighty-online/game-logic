@@ -170,21 +170,24 @@ class Perspective:
         self.declarer, self.trump, self.bid, self.friend_card, self.friend = self.setup
 
 
+class CallType:
+    _callnames = ['bid', 'exchange', 'trump change', 'miss-deal check', 'friend call',
+                  'redeal', 'play', 'game over']
+
+    def __init__(self, typestr: str):
+        assert typestr in CallType._callnames
+        self.typestr = typestr
+
+    def __repr__(self):
+        return 'CallType: ' + self.typestr
+    
+    def __eq__(self, other):
+        return self.typestr == other.typestr
+
+
 class GameEngine:
     """The class to wrap all the data manipulation and processes for a game."""
     bids: List[Tuple[Optional[str], Optional[int]]]
-
-    # The block below sets the types of valid calls to the GameEngine, and assigns them to a dictionary.
-    # This way, invalid call types cannot be set without invoking an KeyError.
-    _calls = ['bid', 'exchange', 'trump change', 'miss-deal check', 'friend call',
-              'redeal', 'play', 'game over']
-
-    calltype = {}
-    call = ''
-    for call in _calls:
-        calltype[call] = call
-    del call
-    del _calls
 
     def __init__(self):
         self.hands, self.kitty = deal_deck()
@@ -218,7 +221,7 @@ class GameEngine:
         self.bids = [(None, None) for _ in range(5)]
 
         # Stores what call type should come next
-        self.next_call = GameEngine.calltype['bid']
+        self.next_call = CallType('bid')
 
         # The leader of the next trick
         self.leader = None
@@ -254,7 +257,7 @@ class GameEngine:
         Bids are saved in self.bids in player order, in the form of (trump, bid).
         A pass is indicated by a bid of 0.
         """
-        if self.next_call != GameEngine.calltype['bid']:
+        if self.next_call != CallType('bid'):
             return 1
 
         if self.next_bidder is not None:  # Checks if the bidder is valid (i.e. is the expected one)
@@ -298,7 +301,7 @@ class GameEngine:
                     self.minimum_bid -= 1
                     self.bids = [(None, None) for _ in range(5)]
                 else:  # If everyone passes even with 12 as the lower bound, there should be a redeal.
-                    self.next_call = GameEngine.calltype['redeal']
+                    self.next_call = CallType('redeal')
                     return 0
 
             if no_pass_player_count == 1:  # Bidding has ended.
@@ -306,7 +309,7 @@ class GameEngine:
                 self.declarer = declarer_candidate  # Declarer is set.
                 self.trump, self.bid = self.bids[declarer_candidate]  # The trump suit and bid are set
 
-                self.next_call = GameEngine.calltype['exchange']
+                self.next_call = CallType('exchange')
                 return 0
 
         # The loop below finds the next bidder, ignoring players who passed.
@@ -325,7 +328,7 @@ class GameEngine:
         Returns 1 on unexpected call.
         Returns 2 on invalid discarding_cards list
         """
-        if self.next_call != GameEngine.calltype['exchange']:
+        if self.next_call != CallType('exchange'):
             return 1
 
         if len(discarding_cards) != 3:
@@ -349,7 +352,7 @@ class GameEngine:
             if is_pointcard(card):
                 self.point_cards[self.declarer].append(card)
 
-        self.next_call = GameEngine.calltype['trump change']
+        self.next_call = CallType('trump change')
         return 0
 
     def trump_change(self, trump: str) -> int:
@@ -361,7 +364,7 @@ class GameEngine:
         Returns 2 on invalid trump.
         Returns 3 if bid can't be raised.
         """
-        if self.next_call != GameEngine.calltype['trump change']:
+        if self.next_call != CallType('trump change'):
             return 1
 
         if trump not in suits + ['N']:
@@ -385,7 +388,7 @@ class GameEngine:
             self.mighty = trump_to_mighty(self.trump)
             self.ripper = trump_to_ripper(self.trump)
 
-        self.next_call = GameEngine.calltype['miss-deal check']
+        self.next_call = CallType('miss-deal check')
         return 0
 
     def miss_deal_check(self, player: int, miss_deal: bool) -> int:
@@ -397,7 +400,7 @@ class GameEngine:
         Returns 2 on invalid player.
         Returns 3 on invalid miss-deal call.
         """
-        if self.next_call != GameEngine.calltype['miss-deal check']:
+        if self.next_call != CallType('miss-deal check'):
             return 1
 
         if player not in range(5):
@@ -407,11 +410,11 @@ class GameEngine:
             if not is_miss_deal(self.hands[player], self.mighty):  # fake miss-deal call
                 return 3
             else:
-                self.next_call = GameEngine.calltype['redeal']
+                self.next_call = CallType('redeal')
         else:
             self.hand_confirmed[player] = True
             if all(self.hand_confirmed):
-                self.next_call = GameEngine.calltype['friend call']
+                self.next_call = CallType('friend call')
 
         return 0
 
@@ -424,14 +427,14 @@ class GameEngine:
         Returns 1 on unexpected call.
         Returns 2 on invalid friend_card.
         """
-        if self.next_call != GameEngine.calltype['friend call']:
+        if self.next_call != CallType('friend call'):
             return 1
         if friend_card not in cards + ['NF']:
             return 2
 
         self.friend_card = friend_card
 
-        self.next_call = GameEngine.calltype['play']
+        self.next_call = CallType('play')
         self.leader = self.declarer
         return 0
 
@@ -448,7 +451,7 @@ class GameEngine:
         Returns 6 on invalid suit_led when joker is led.
         Returns 7 on unexpected suit_led value.
         """
-        if self.next_call != GameEngine.calltype['play']:
+        if self.next_call != CallType('play'):
             return 1
 
         is_leader = len(self.current_trick) == 0
@@ -519,7 +522,7 @@ class GameEngine:
             # when game is over
             if len(self.completed_tricks) == 10:
                 self._set_winners()
-                self.next_call = GameEngine.calltype['game over']
+                self.next_call = CallType('game over')
 
         return 0
 

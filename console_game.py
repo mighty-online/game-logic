@@ -168,7 +168,7 @@ while True:
     ########################################################################
     '''
     call_type = mighty_game.next_call
-    if call_type == game.GameEngine.calltype['bid']:
+    if call_type == game.CallType('bid'):
         print("Player {}'s turn to make a bid.".format(mighty_game.next_bidder))
 
         if mighty_game.highest_bid is None:
@@ -204,7 +204,7 @@ while True:
 
         feedback = mighty_game.bidding(mighty_game.next_bidder, trump, bid)
 
-    elif call_type == game.GameEngine.calltype['exchange']:
+    elif call_type == game.CallType('exchange'):
         print('Declarer: {}'.format(mighty_game.declarer))
         print("Final bid: {} {}".format(game.suits_short_to_long[mighty_game.trump], mighty_game.bid))
         print("Card exchange in process.")
@@ -227,7 +227,7 @@ while True:
         print('Exchange over.')
         feedback = mighty_game.exchange(to_discard)
 
-    elif call_type == game.GameEngine.calltype['trump change']:
+    elif call_type == game.CallType('trump change'):
         prev_trump = mighty_game.trump
         if mighty_game.declarer in human_players:
             while True:
@@ -247,7 +247,7 @@ while True:
         print("The trump suit has been {} to {}.".format(changed_or_fixed, game.suits_short_to_long[final_trump]))
         print('The final bid is {} {}.'.format(game.suits_short_to_long[mighty_game.trump], mighty_game.bid))
 
-    elif call_type == game.GameEngine.calltype['miss-deal check']:
+    elif call_type == game.CallType('miss-deal check'):
         print("Miss-deal check in process.")
         deal_miss = [False] * 5
         for player in range(5):
@@ -270,10 +270,10 @@ while True:
                 print('Fuck.')
                 print(feedback)
                 exit(1)
-            if mighty_game.next_call != game.GameEngine.calltype['miss-deal check']:
+            if mighty_game.next_call != game.CallType('miss-deal check'):
                 break
 
-    elif call_type == game.GameEngine.calltype['friend call']:
+    elif call_type == game.CallType('friend call'):
         print("Friend to be called.")
         if mighty_game.declarer in ai_players:
             friend_card = ai_friend_caller(mighty_game.hands[mighty_game.declarer], mighty_game.trump)
@@ -287,14 +287,14 @@ while True:
         print("{} friend called.".format(card_repr(friend_card)))
         feedback = mighty_game.friend_call(friend_card)
 
-    elif call_type == game.GameEngine.calltype['redeal']:
+    elif call_type == game.CallType('redeal'):
         print("REDEAL IN PROCESS.")
         mighty_game = game.GameEngine()
         print("REDEAL COMPLETE.")
         print()
         introduce_hands(mighty_game.hands, human_players)
 
-    elif call_type == game.GameEngine.calltype['play']:
+    elif call_type == game.CallType('play'):
 
         # Below block finds whose turn it is.
         player = mighty_game.leader
@@ -349,7 +349,7 @@ while True:
 
         feedback = mighty_game.play(player, card, suit_led, activate_joker_call)
 
-    elif call_type == game.GameEngine.calltype['game over']:
+    elif call_type == game.CallType('game over'):
         break
 
     else:
