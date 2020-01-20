@@ -4,7 +4,7 @@ This module contains all the underlying classes needed for playing a game of mig
 """
 
 import random
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 suits = ['S', 'D', 'H', 'C']
 no_trump = 'N'
@@ -172,7 +172,7 @@ class Perspective:
 
 class GameEngine:
     """The class to wrap all the data manipulation and processes for a game."""
-    bids: List[(Optional[str], Optional[int])]
+    bids: List[Tuple[Optional[str], Optional[int]]]
 
     # The block below sets the types of valid calls to the GameEngine, and assigns them to a dictionary.
     # This way, invalid call types cannot be set without invoking an KeyError.
@@ -283,14 +283,12 @@ class GameEngine:
             if bid == 20 and trump == 'N':
                 for player in range(5):
                     if player != bidder:
-                        # noinspection PyTypeChecker
                         self.bids[player] = (None, 0)
 
         if all([b[1] is not None for b in self.bids]):  # i.e. if everyone has passed or made a bid.
             no_pass_player_count = 0
             declarer_candidate = None
             for player in range(len(self.bids)):
-                # noinspection PyTypeChecker
                 if self.bids[player][1] > 0:
                     declarer_candidate = player
                     no_pass_player_count += 1
