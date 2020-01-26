@@ -171,7 +171,7 @@ class Card:
                              '🃁🃂🃃🃄🃅🃆🃇🃈🃉🃊🃋🃍🃎',
                              '🂱🂲🂳🂴🂵🂶🂷🂸🂹🂺🂻🂽🂾',
                              '🂡🂢🂣🂤🂥🂦🂧🂨🂩🂪🂫🂭🂮']
-            return unicode_cards[self.suit.val][self.rank.val - 1]
+            return unicode_cards[self.suit.val - 1][self.rank.val - 1]
 
     def __repr__(self):
         if self.suit.val != 0:
