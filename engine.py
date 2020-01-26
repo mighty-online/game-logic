@@ -366,3 +366,6 @@ class GameEngine:
                                        self.friend_card, self.minimum_bid, gamepoint_transfer_function)
 
         self.gamepoints_rewarded = rewards
+
+    def __repr__(self):
+        return "<GameEngine object at {}>".format(self.next_call)
