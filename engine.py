@@ -24,22 +24,21 @@ class CallType:
 
 
 class GameEngine:
-    """The class to wrap all the data manipulation and processes for a game."""
+    """The class to wrap all the data manipulation and processes for a game.
+
+    Public attributes are meant to be read but NOT WRITTEN TO."""
     bids: List[Tuple[Optional[Suit], Optional[int]]]
 
     def __init__(self):
         self.hands, self.kitty = cs.deal_deck()
         self.point_cards = [[] for _ in range(5)]
 
-        self.mighty = None
-        self.ripper = None
-
         # Play related variables
         self.completed_tricks = []
+        self.trick_winners = []
         self.current_trick = []
         self.previous_suit_leds = []  # necessary to prevent the suit led information of the Joker from being lost
         self.suit_led = None
-        self.recent_winner = None
 
         # Setup: declarer, trump, bid, friend, friend_card
         self.declarer = None
@@ -47,6 +46,10 @@ class GameEngine:
         self.bid = None
         self.friend = None  # Only set when friend is revealed
         self.friend_card = None
+
+        # Mighty and Ripper cards
+        self.mighty = None
+        self.ripper = None
 
         # Hand confirmation of players. (i.e. no miss-deal)
         self.hand_confirmed = [False for _ in range(5)]
@@ -74,12 +77,35 @@ class GameEngine:
         return [player, self.hands[player][:], self.completed_tricks,
                 self.current_trick, self.previous_suit_leds[:], self.suit_led, self.setup()]
 
+    def _set_winners(self, gamepoint_transfer_function=None) -> None:
+        """Sets the gamepoints to be rewarded to each player after game ends."""
+        if gamepoint_transfer_function is None:
+            gamepoint_transfer_function = cs.default_gamepoint_transfer_unit
+
+        self.declarer_team_points = len(self.point_cards[self.declarer])
+
+        if self.friend is not None and self.friend != self.declarer:
+            self.declarer_team_points += len(self.point_cards[self.friend])
+
+        self.declarer_won = self.declarer_team_points >= self.bid
+
+        rewards = cs.gamepoint_rewards(self.declarer_team_points, self.declarer, self.friend, self.bid, self.trump,
+                                       self.friend_card, self.minimum_bid, gamepoint_transfer_function)
+
+        self.gamepoints_rewarded = rewards
+
+    def __repr__(self):
+        return "<GameEngine object at {}>".format(self.next_call)
+
     def setup(self):
         return cs.Setup(self.declarer, self.trump, self.bid, self.friend, self.friend_card)
 
     def perspective(self, player: int) -> cs.Perspective:
         """Returns the perspective of the given player."""
         return cs.Perspective(*self._perspective_data(player))
+
+    def trick_complete(self):
+        return self.completed_tricks and not self.current_trick
 
     def bidding(self, bidder: int, trump: Suit, bid: int) -> int:
         """Processes the bidding phase, one bid per call.
@@ -288,7 +314,6 @@ class GameEngine:
         is_leader = len(self.current_trick) == 0
 
         if is_leader:
-            self.recent_winner = None
             if play.player != self.leader:
                 return 2
         else:
@@ -329,11 +354,11 @@ class GameEngine:
 
         # The trick is over
         if len(self.current_trick) == 5:
-            self.recent_winner = cs.trick_winner(len(self.completed_tricks), self.current_trick, self.trump)
+            trick_winner = cs.trick_winner(len(self.completed_tricks), self.current_trick, self.trump)
 
             point_cards = [play.card for play in self.current_trick if play.card.is_pointcard()]
 
-            self.point_cards[self.recent_winner] += point_cards
+            self.point_cards[trick_winner] += point_cards
 
             self.completed_tricks.append(self.current_trick)
             self.current_trick = []
@@ -341,7 +366,8 @@ class GameEngine:
             self.previous_suit_leds.append(self.suit_led)
             self.suit_led = None
 
-            self.leader = self.recent_winner
+            self.trick_winners.append(trick_winner)
+            self.leader = trick_winner
 
             # when game is over
             if len(self.completed_tricks) == 10:
@@ -349,23 +375,3 @@ class GameEngine:
                 self.next_call = CallType('game over')
 
         return 0
-
-    def _set_winners(self, gamepoint_transfer_function=None) -> None:
-        """Sets the gamepoints to be rewarded to each player after game ends."""
-        if gamepoint_transfer_function is None:
-            gamepoint_transfer_function = cs.default_gamepoint_transfer_unit
-
-        self.declarer_team_points = len(self.point_cards[self.declarer])
-
-        if self.friend is not None and self.friend != self.declarer:
-            self.declarer_team_points += len(self.point_cards[self.friend])
-
-        self.declarer_won = self.declarer_team_points >= self.bid
-
-        rewards = cs.gamepoint_rewards(self.declarer_team_points, self.declarer, self.friend, self.bid, self.trump,
-                                       self.friend_card, self.minimum_bid, gamepoint_transfer_function)
-
-        self.gamepoints_rewarded = rewards
-
-    def __repr__(self):
-        return "<GameEngine object at {}>".format(self.next_call)

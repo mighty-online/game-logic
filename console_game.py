@@ -357,8 +357,8 @@ while True:
     if feedback:
         raise RuntimeError('Calltype: {}, Error #{}'.format(mighty_game.next_call, feedback))
 
-    if mighty_game.recent_winner is not None:
-        print("Trick won by Player {}!".format(mighty_game.recent_winner))
+    if mighty_game.trick_complete():
+        print("Trick won by Player {}!".format(mighty_game.trick_winners[-1]))
         for p in range(5):
             if p not in (mighty_game.declarer, mighty_game.friend):
                 print('Player {}: {} points'.format(p, len(mighty_game.point_cards[p])))
