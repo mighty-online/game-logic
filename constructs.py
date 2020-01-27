@@ -69,14 +69,22 @@ class Setup:
 class Perspective:
     """The Perspective class, containing all information from the perspective of a single player."""
 
-    def __init__(self, player, hand, completed_tricks, current_trick, previous_suit_leds, suit_led, setup: Setup):
+    def __init__(self, player, hand, kitty: Optional[list], completed_tricks, trick_winners, current_trick,
+                 previous_suit_leds, suit_led, setup: Setup):
         self.player = player
         self.hand = hand
+        self.kitty = kitty  # If not the declarer, the kitty should be None
+
         self.completed_tricks = completed_tricks
+        self.trick_winners = trick_winners
         self.current_trick = current_trick
         self.previous_suit_leds = previous_suit_leds
         self.suit_led = suit_led
+
         self.setup = setup
+
+        if player == setup.declarer:
+            assert kitty is not None
 
 
 def default_gamepoint_transfer_unit(declarer_won: bool, multiplier: int, bid: int, declarer_cards_won: int,

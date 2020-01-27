@@ -74,7 +74,8 @@ class GameEngine:
 
     def _perspective_data(self, player: int) -> list:
         """Packages the perspective data of the given player."""
-        return [player, self.hands[player][:], self.completed_tricks,
+        kitty_or_none = self.kitty[:] if player == self.declarer else None
+        return [player, self.hands[player][:], kitty_or_none, self.completed_tricks, self.trick_winners,
                 self.current_trick, self.previous_suit_leds[:], self.suit_led, self.setup()]
 
     def _set_winners(self, gamepoint_transfer_function=None) -> None:
