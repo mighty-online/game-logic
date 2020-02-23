@@ -207,11 +207,11 @@ def trump_to_ripper(trump: Suit) -> Card:
     return ripper
 
 
-def is_miss_deal(hand: list, mighty: Suit) -> bool:
+def is_miss_deal(hand: list, mighty: Card) -> bool:
     """Determines whether the given hand qualifies as a miss-deal."""
     point_card_count = 0
     for card in hand:
-        if card.is_pointcard() and card.suit != mighty:
+        if card.is_pointcard() and card != mighty:
             point_card_count += 1
 
     if point_card_count <= 1:
@@ -226,8 +226,8 @@ def is_valid_move(trick_number: int, trick: list, suit_led: Optional[Suit], trum
         return False
     if len(trick) == 0:
         if trick_number == 0:
-            # Cannot play a card of the trump suit as the first card of the game.
-            if play.card.suit == trump:
+            # For the first card of the game, a non-trump card must be played - if available.
+            if any([card.suit != trump for card in hand]) and play.card.suit == trump:
                 return False
             # Cannot activate Joker Call during the first trick.
             elif play.is_joker_call():

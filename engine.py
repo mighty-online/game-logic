@@ -26,7 +26,7 @@ class CallType:
 class GameEngine:
     """The class to wrap all the data manipulation and processes for a game.
 
-    Public attributes are meant to be read but NOT WRITTEN TO."""
+    Public attributes are meant to be read but NOT WRITTEN TO."""  # This is to you, cr0sh.
     bids: List[Tuple[Optional[Suit], Optional[int]]]
 
     def __init__(self):
