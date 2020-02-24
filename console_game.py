@@ -68,21 +68,21 @@ def random_random_exchanger(hand: list, trump: Suit) -> tuple:
     return hand[:3], trump
 
 
-def mighty_joker_trump_friend_caller(hand: list, trump: Suit) -> Card:
+def mighty_joker_trump_friend_caller(hand: list, trump: Suit) -> constructs.FriendCall:
     """Calls the friend card, prioritizing the mighty, followed by joker, then a card of the trump suit.
 
     Doesn't call itself."""
     mighty = constructs.trump_to_mighty(trump)
     if mighty not in hand:
-        return mighty
+        return constructs.FriendCall(0, mighty)
     elif not any([c.is_joker() for c in hand]):
-        return Card.joker()
+        return constructs.FriendCall(0, Card.joker())
     else:
         rank_priority_order = [1, 13, 12, 11, 10, 9, 8, 7, 6]
         for rank_val in rank_priority_order:
             card = Card(trump, Rank(rank_val))
             if card not in hand:
-                return card
+                return constructs.FriendCall(0, card)
         raise RuntimeError("Nope. This can't have happened.")
 
 
@@ -220,12 +220,12 @@ while True:
             input('Player {} - Press Enter to reveal the kitty'.format(mighty_game.declarer))
             print(' '.join([str(c) for c in mighty_game.kitty]))
             while True:
-                to_discard = input("Enter the three cards to discard, space seperated: ")
+                to_discard = input("Enter the three cards to discard, space separated: ")
                 to_discard = to_discard.split()
-                if to_discard and all(
-                        [Card.is_cardstr(x) and Card(*Card.str_to_vals(x)) in mighty_game.hands[
+                if len(to_discard) == 3 and all(
+                        [Card.is_cardstr(x) and Card.str_to_card(x) in mighty_game.hands[
                             mighty_game.declarer] + mighty_game.kitty for x in to_discard]):
-                    to_discard = [Card(*Card.str_to_vals(x)) for x in to_discard]
+                    to_discard = [Card.str_to_card(x) for x in to_discard]
                     break
                 print("Invalid input.")
 
@@ -285,17 +285,24 @@ while True:
     elif call_type == engine.CallType('friend call'):
         print("Friend to be called.")
         if mighty_game.declarer in ai_players:
-            friend_card = ai_friend_caller(mighty_game.hands[mighty_game.declarer], mighty_game.trump)
+            friend_call = ai_friend_caller(mighty_game.hands[mighty_game.declarer], mighty_game.trump)
         else:
             while True:
-                friend_card = input("Enter friend card: ")
-                if Card.is_cardstr(friend_card):
-                    friend_card = Card(*Card.str_to_vals(friend_card))
+                friend_choice = input("Enter friend card or enter ftw or enter nf: ")
+                if Card.is_cardstr(friend_choice):
+                    friend_choice = Card.str_to_card(friend_choice)
+                    friend_call = constructs.FriendCall(0, friend_choice)
+                    break
+                elif friend_choice == 'ftw':
+                    friend_call = constructs.FriendCall(1)
+                    break
+                elif friend_choice == 'nf':
+                    friend_call = constructs.FriendCall(2)
                     break
                 print("Invalid card.")
 
-        print("{} friend called.".format(card_repr(friend_card)))
-        feedback = mighty_game.friend_call(friend_card)
+        print("{} called.".format(friend_call))
+        feedback = mighty_game.friend_call(friend_call)
 
     elif call_type == engine.CallType('redeal'):
         print("REDEAL IN PROCESS.")
@@ -341,7 +348,7 @@ while True:
         activate_joker_call = False
 
         print(play)
-        if play.card == mighty_game.friend_card:
+        if mighty_game.friend_just_revealed:
             print()
             print("<<Friend revealed!!>>")
             print()
