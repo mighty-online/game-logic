@@ -141,7 +141,7 @@ def default_gamepoint_transfer_unit(declarer_won: bool, multiplier: int, bid: in
     The declarer wins (or loses) twice the unit.
     The friend and defenders win (or lose) the unit amount of gamepoint."""
     if declarer_won:
-        return multiplier * (declarer_cards_won - bid) + (bid - minimum_bid) * 2
+        return multiplier * ((declarer_cards_won - bid) + (bid - minimum_bid) * 2)
     else:
         return multiplier * (bid - declarer_cards_won)
 
