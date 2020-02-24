@@ -185,7 +185,7 @@ while True:
             print("To pass, enter 0 for the bid.")
             while True:
                 while True:
-                    trump = input("Enter trump: ")
+                    trump = input("Enter trump(N for no-trump): ")
                     bid = input("Enter bid: ")
                     if (Suit.is_suitstr(trump) and bid.isdigit()) or bid == '0':
                         bid = int(bid)
@@ -348,12 +348,37 @@ while True:
         activate_joker_call = False
 
         print(play)
-        if mighty_game.friend_just_revealed:
+        feedback = mighty_game.play(play)
+
+        if mighty_game.trick_complete():
+            if ai_num != 5:
+                input()
+            print('-------------------------------')
             print()
-            print("<<Friend revealed!!>>")
+            print("===Trick Summary===")
+            for play in mighty_game.completed_tricks[-1]:
+                print(play)
             print()
 
-        feedback = mighty_game.play(play)
+            print("Trick won by Player {}!".format(mighty_game.trick_winners[-1]))
+
+            if mighty_game.friend_just_revealed:
+                print()
+                print("<<Friend revealed!!>>")
+                print("Friend is player {}".format(mighty_game.friend))
+                print()
+
+            for p in range(5):
+                if p not in (mighty_game.declarer, mighty_game.friend):
+                    print('Player {}: {} points'.format(p, len(mighty_game.point_cards[p])))
+            print()
+            print('-------------------------------')
+        else:
+            if mighty_game.friend_just_revealed:
+                print()
+                print("<<Friend revealed!!>>")
+                print("Friend is player {}".format(mighty_game.friend))
+                print()
 
     elif call_type == engine.CallType('game over'):
         break
@@ -364,14 +389,9 @@ while True:
     if feedback:
         raise RuntimeError('Calltype: {}, Error #{}'.format(mighty_game.next_call, feedback))
 
-    if mighty_game.trick_complete():
-        print("Trick won by Player {}!".format(mighty_game.trick_winners[-1]))
-        for p in range(5):
-            if p not in (mighty_game.declarer, mighty_game.friend):
-                print('Player {}: {} points'.format(p, len(mighty_game.point_cards[p])))
-        print()
-
     print('-------------------------------')
+    if ai_num != 5:
+        input()
 
 print("The game is over.")
 print("The bid was {} {}.".format(mighty_game.trump.long(), mighty_game.bid))
