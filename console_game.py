@@ -194,7 +194,7 @@ while True:
                 if bid == 0:
                     break
                 else:
-                    trump = Suit(Suit.str_to_val(trump))
+                    trump = Suit.str_to_suit(trump)
                     if constructs.is_valid_bid(trump, bid, mighty_game.minimum_bid,
                                                prev_trump=mighty_game.trump_candidate,
                                                highest_bid=mighty_game.highest_bid):
@@ -240,7 +240,7 @@ while True:
             while True:
                 final_trump = input("Finalize your trump: ")
                 if Suit.is_suitstr(final_trump):
-                    final_trump = Suit(Suit.str_to_val(final_trump))
+                    final_trump = Suit.str_to_suit(final_trump)
                     feedback = mighty_game.trump_change(final_trump)
                     if feedback == 0:
                         break
