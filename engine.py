@@ -44,8 +44,11 @@ class GameEngine:
         self.declarer = None
         self.trump = None
         self.bid = None
-        self.friend = None  # Only set when friend is revealed
-        self.friend_card = None
+        self.friend = None  # Only set after the friend has been revealed.
+        self.called_friend = None
+
+        # Use below attribute to check whether friend has been revealed by the most recent self.play call
+        self.friend_just_revealed = False
 
         # Mighty and Ripper cards
         self.mighty = None
@@ -91,7 +94,7 @@ class GameEngine:
         self.declarer_won = self.declarer_team_points >= self.bid
 
         rewards = cs.gamepoint_rewards(self.declarer_team_points, self.declarer, self.friend, self.bid, self.trump,
-                                       self.friend_card, self.minimum_bid, gamepoint_transfer_function)
+                                       self.called_friend, self.minimum_bid, gamepoint_transfer_function)
 
         self.gamepoints_rewarded = rewards
 
@@ -99,7 +102,7 @@ class GameEngine:
         return "<GameEngine object at {}>".format(self.next_call)
 
     def setup(self):
-        return cs.Setup(self.declarer, self.trump, self.bid, self.friend, self.friend_card)
+        return cs.Setup(self.declarer, self.trump, self.bid, self.friend, self.called_friend)
 
     def perspective(self, player: int) -> cs.Perspective:
         """Returns the perspective of the given player."""
@@ -279,9 +282,8 @@ class GameEngine:
 
         return 0
 
-    def friend_call(self, friend_card: Optional[Card]) -> int:
-        """Given the friend card, sets up the friend.
-        Passing in None indicates no friend.
+    def friend_call(self, friend_call: cs.FriendCall) -> int:
+        """Sets the friend call.
 
         Returns 0 on valid call.
 
@@ -290,7 +292,7 @@ class GameEngine:
         if self.next_call != CallType('friend call'):
             return 1
 
-        self.friend_card = friend_card
+        self.called_friend = friend_call
 
         self.next_call = CallType('play')
         self.leader = self.declarer
@@ -341,17 +343,15 @@ class GameEngine:
                                 self.hands[play.player], play):
             return 4
 
-        if play.card == self.friend_card:
-            friend_reveal = True
-        else:
-            friend_reveal = False
+        self.friend_just_revealed = False
+
+        # The friend is set when the friend card has been played.
+        if self.called_friend.is_card_specified() and self.called_friend.card == play.card:
+            self.friend_just_revealed = True
+            self.friend = play.player
 
         self.current_trick.append(play)
         self.hands[play.player].remove(play.card)
-
-        # The friend is set when the friend card has been played.
-        if friend_reveal:
-            self.friend = play.player
 
         # The trick is over
         if len(self.current_trick) == 5:
@@ -369,6 +369,11 @@ class GameEngine:
 
             self.trick_winners.append(trick_winner)
             self.leader = trick_winner
+
+            # first-trick-winner friend determined.
+            if self.called_friend.is_ftw_friend() and len(self.completed_tricks) == 1:
+                self.friend_just_revealed = True
+                self.friend = trick_winner
 
             # when game is over
             if len(self.completed_tricks) == 10:

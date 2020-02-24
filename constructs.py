@@ -55,15 +55,62 @@ class JokerCall(LeadingPlay):
         self._is_joker_call = True
 
 
-class Setup:
-    """The Setup class, containing declarer, trump, bid, friend and friend_card."""
+class FriendCall:
+    """The class for a friend call.
 
-    def __init__(self, declarer, trump, bid, friend, friend_card):
+    A friend call is either a card, or a first-trick-winner call(a.k.a. 초구프렌드).
+
+    For initialization,
+    fctype should be 0 for a card-specified friend.
+    fctype should be 1 for a first-trick-winner friend.
+    """
+
+    def __init__(self, fctype: int, card: Optional[Card] = None):
+        self._fctype = None
+        self.card = None
+
+        if fctype == 0:
+            assert card is not None
+            self._fctype = fctype
+            self.card = card
+        elif fctype == 1:
+            self._fctype = fctype
+            self.card = None
+        elif fctype == 2:
+            self._fctype = fctype
+            self.card = None
+        else:
+            raise ValueError
+
+    def is_card_specified(self):
+        return self._fctype == 0
+
+    def is_ftw_friend(self):
+        return self._fctype == 1
+
+    def is_no_friend(self):
+        return self._fctype == 2
+
+    def __repr__(self):
+        if self._fctype == 0:
+            return f"{self.card} Friend"
+        elif self._fctype == 1:
+            return "FTW Friend"
+        elif self._fctype == 2:
+            return "No Friend"
+        else:
+            raise RuntimeError("Don't mess with my private attributes.")
+
+
+class Setup:
+    """The Setup class, containing declarer, trump, bid, friend and friend_call."""
+
+    def __init__(self, declarer, trump, bid, friend, friend_call):
         self.declarer = declarer
         self.trump = trump
         self.bid = bid
         self.friend = friend
-        self.friend_card = friend_card
+        self.friend_call = friend_call
 
 
 class Perspective:
@@ -99,13 +146,14 @@ def default_gamepoint_transfer_unit(declarer_won: bool, multiplier: int, bid: in
         return multiplier * (bid - declarer_cards_won)
 
 
-def gamepoint_rewards(declarer_team_points: int, declarer: int, friend: int, bid: int, trump: Suit, friend_card: Card,
+def gamepoint_rewards(declarer_team_points: int, declarer: int, friend: int, bid: int, trump: Suit,
+                      friend_call: FriendCall,
                       minimum_bid: int, gamepoint_transfer_unit_function=default_gamepoint_transfer_unit) -> list:
     """Returns the gamepoint rewards to each player."""
     declarer_won = declarer_team_points >= bid
 
     multiplier = 1
-    if friend_card is None:
+    if friend_call.is_no_friend():
         multiplier *= 2
     if trump.is_nosuit():
         multiplier *= 2
