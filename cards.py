@@ -127,9 +127,15 @@ class Card:
         assert Card.is_cardstr(card_str)
 
         suit_str = card_str[0]
-        rank_str = card_str[1]
+        rank_str = card_str[1:]
 
         return Suit.str_to_val(suit_str), Rank.str_to_val(rank_str)
+
+    @classmethod
+    def str_to_card(cls, card_str: str):
+        suit_val, rank_val = Card.str_to_vals(card_str)
+        suit, rank = Suit(suit_val), Rank(rank_val)
+        return cls(suit, rank)
 
     @staticmethod
     def is_cardstr(card_str: str) -> bool:
