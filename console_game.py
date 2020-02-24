@@ -350,6 +350,12 @@ while True:
         print(play)
         feedback = mighty_game.play(play)
 
+        if mighty_game.friend_just_revealed:
+            print()
+            print("<<Friend revealed!!>>")
+            print("Friend is player {}".format(mighty_game.friend))
+            print()
+
         if mighty_game.trick_complete():
             if ai_num != 5:
                 input()
@@ -362,23 +368,11 @@ while True:
 
             print("Trick won by Player {}!".format(mighty_game.trick_winners[-1]))
 
-            if mighty_game.friend_just_revealed:
-                print()
-                print("<<Friend revealed!!>>")
-                print("Friend is player {}".format(mighty_game.friend))
-                print()
-
             for p in range(5):
                 if p not in (mighty_game.declarer, mighty_game.friend):
                     print('Player {}: {} points'.format(p, len(mighty_game.point_cards[p])))
             print()
             print('-------------------------------')
-        else:
-            if mighty_game.friend_just_revealed:
-                print()
-                print("<<Friend revealed!!>>")
-                print("Friend is player {}".format(mighty_game.friend))
-                print()
 
     elif call_type == engine.CallType('game over'):
         break
