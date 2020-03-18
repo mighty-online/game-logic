@@ -25,6 +25,10 @@ class Suit:
         assert Suit.is_suitstr(suit_str)
         return Suit._suits_short.index(suit_str)
 
+    @classmethod
+    def str_to_suit(cls, suit_str: str):
+        return Suit(Suit.str_to_val(suit_str))
+
     @staticmethod
     def is_suitstr(suit_str: str) -> bool:
         return suit_str in Suit._suits_short
@@ -73,6 +77,10 @@ class Rank:
     def str_to_val(rank_str: str) -> int:
         assert Rank.is_rankstr(rank_str)
         return Rank._ranks_short.index(rank_str)
+
+    @classmethod
+    def str_to_rank(cls, rank_str: str):
+        return Rank(Rank.str_to_val(rank_str))
 
     @staticmethod
     def is_rankstr(rank_str: str) -> bool:
@@ -127,9 +135,15 @@ class Card:
         assert Card.is_cardstr(card_str)
 
         suit_str = card_str[0]
-        rank_str = card_str[1]
+        rank_str = card_str[1:]
 
         return Suit.str_to_val(suit_str), Rank.str_to_val(rank_str)
+
+    @classmethod
+    def str_to_card(cls, card_str: str):
+        suit_val, rank_val = Card.str_to_vals(card_str)
+        suit, rank = Suit(suit_val), Rank(rank_val)
+        return Card(suit, rank)
 
     @staticmethod
     def is_cardstr(card_str: str) -> bool:
@@ -171,7 +185,7 @@ class Card:
                              '🃁🃂🃃🃄🃅🃆🃇🃈🃉🃊🃋🃍🃎',
                              '🂱🂲🂳🂴🂵🂶🂷🂸🂹🂺🂻🂽🂾',
                              '🂡🂢🂣🂤🂥🂦🂧🂨🂩🂪🂫🂭🂮']
-            return unicode_cards[self.suit.val][self.rank.val - 1]
+            return unicode_cards[self.suit.val - 1][self.rank.val - 1]
 
     def __repr__(self):
         if self.suit.val != 0:

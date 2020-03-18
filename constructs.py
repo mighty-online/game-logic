@@ -55,28 +55,83 @@ class JokerCall(LeadingPlay):
         self._is_joker_call = True
 
 
-class Setup:
-    """The Setup class, containing declarer, trump, bid, friend and friend_card."""
+class FriendCall:
+    """The class for a friend call.
 
-    def __init__(self, declarer, trump, bid, friend, friend_card):
+    A friend call is either a card, or a first-trick-winner call(a.k.a. 초구프렌드).
+
+    For initialization,
+    fctype should be 0 for a card-specified friend.
+    fctype should be 1 for a first-trick-winner friend.
+    """
+
+    def __init__(self, fctype: int, card: Optional[Card] = None):
+        self._fctype = None
+        self.card = None
+
+        if fctype == 0:
+            assert card is not None
+            self._fctype = fctype
+            self.card = card
+        elif fctype == 1:
+            self._fctype = fctype
+            self.card = None
+        elif fctype == 2:
+            self._fctype = fctype
+            self.card = None
+        else:
+            raise ValueError
+
+    def is_card_specified(self):
+        return self._fctype == 0
+
+    def is_ftw_friend(self):
+        return self._fctype == 1
+
+    def is_no_friend(self):
+        return self._fctype == 2
+
+    def __repr__(self):
+        if self._fctype == 0:
+            return f"{self.card} Friend"
+        elif self._fctype == 1:
+            return "FTW Friend"
+        elif self._fctype == 2:
+            return "No Friend"
+        else:
+            raise RuntimeError("Don't mess with my private attributes.")
+
+
+class Setup:
+    """The Setup class, containing declarer, trump, bid, friend and friend_call."""
+
+    def __init__(self, declarer, trump, bid, friend, friend_call):
         self.declarer = declarer
         self.trump = trump
         self.bid = bid
         self.friend = friend
-        self.friend_card = friend_card
+        self.friend_call = friend_call
 
 
 class Perspective:
     """The Perspective class, containing all information from the perspective of a single player."""
 
-    def __init__(self, player, hand, completed_tricks, current_trick, previous_suit_leds, suit_led, setup: Setup):
+    def __init__(self, player, hand, kitty: Optional[list], completed_tricks, trick_winners, current_trick,
+                 previous_suit_leds, suit_led, setup: Setup):
         self.player = player
         self.hand = hand
+        self.kitty = kitty  # If not the declarer, the kitty should be None
+
         self.completed_tricks = completed_tricks
+        self.trick_winners = trick_winners
         self.current_trick = current_trick
         self.previous_suit_leds = previous_suit_leds
         self.suit_led = suit_led
+
         self.setup = setup
+
+        if player == setup.declarer:
+            assert kitty is not None
 
 
 def default_gamepoint_transfer_unit(declarer_won: bool, multiplier: int, bid: int, declarer_cards_won: int,
@@ -86,18 +141,19 @@ def default_gamepoint_transfer_unit(declarer_won: bool, multiplier: int, bid: in
     The declarer wins (or loses) twice the unit.
     The friend and defenders win (or lose) the unit amount of gamepoint."""
     if declarer_won:
-        return multiplier * (declarer_cards_won - bid) + (bid - minimum_bid) * 2
+        return multiplier * ((declarer_cards_won - bid) + (bid - minimum_bid) * 2)
     else:
         return multiplier * (bid - declarer_cards_won)
 
 
-def gamepoint_rewards(declarer_team_points: int, declarer: int, friend: int, bid: int, trump: Suit, friend_card: Card,
+def gamepoint_rewards(declarer_team_points: int, declarer: int, friend: int, bid: int, trump: Suit,
+                      friend_call: FriendCall,
                       minimum_bid: int, gamepoint_transfer_unit_function=default_gamepoint_transfer_unit) -> list:
     """Returns the gamepoint rewards to each player."""
     declarer_won = declarer_team_points >= bid
 
     multiplier = 1
-    if friend_card is None:
+    if friend_call.is_no_friend():
         multiplier *= 2
     if trump.is_nosuit():
         multiplier *= 2
@@ -199,11 +255,11 @@ def trump_to_ripper(trump: Suit) -> Card:
     return ripper
 
 
-def is_miss_deal(hand: list, mighty: Suit) -> bool:
+def is_miss_deal(hand: list, mighty: Card) -> bool:
     """Determines whether the given hand qualifies as a miss-deal."""
     point_card_count = 0
     for card in hand:
-        if card.is_pointcard() and card.suit != mighty:
+        if card.is_pointcard() and card != mighty:
             point_card_count += 1
 
     if point_card_count <= 1:
@@ -218,8 +274,8 @@ def is_valid_move(trick_number: int, trick: list, suit_led: Optional[Suit], trum
         return False
     if len(trick) == 0:
         if trick_number == 0:
-            # Cannot play a card of the trump suit as the first card of the game.
-            if play.card.suit == trump:
+            # For the first card of the game, a non-trump card must be played - if available.
+            if any([card.suit != trump for card in hand]) and play.card.suit == trump:
                 return False
             # Cannot activate Joker Call during the first trick.
             elif play.is_joker_call():
