@@ -3,6 +3,7 @@
 import random
 from cards import *
 import engine
+from engine import CallType
 import constructs
 from time import time
 from typing import Optional
@@ -103,7 +104,8 @@ def introduce_hands(hands: list, players: list) -> None:
     """Introduce the hands of players, revealing and hiding upon Enter."""
     for player in players:
         input("Press Enter to reveal Player {}'s hand.".format(player))
-        print(' '.join([card_repr(c) for c in sorted(hands[player], key=lambda c: (c.suit.val, c.rank.val))]))
+        print(' '.join([card_repr(c) for c in sorted(
+            hands[player], key=lambda c: (c.suit.val, c.rank.val))]))
         input("Press Enter to clear screen.")
         print('\n' * space)
 
@@ -167,7 +169,7 @@ while True:
     ########################################################################
     '''
     call_type = mighty_game.next_call
-    if call_type == engine.CallType('bid'):
+    if call_type == CallType.BID:
         print("Player {}'s turn to make a bid.".format(mighty_game.next_bidder))
 
         if mighty_game.highest_bid is None:
@@ -178,7 +180,6 @@ while True:
         print("Bid must be greater or equal to {}.".format(lower_bound))
 
         if mighty_game.next_bidder in ai_players:
-
             trump, bid = ai_bidder(mighty_game.hands[mighty_game.next_bidder], mighty_game.trump_candidate,
                                    mighty_game.highest_bid, mighty_game.minimum_bid)
         else:
@@ -209,23 +210,27 @@ while True:
 
         feedback = mighty_game.bidding(mighty_game.next_bidder, trump, bid)
 
-    elif call_type == engine.CallType('exchange'):
+    elif call_type == CallType.EXCHANGE:
         print('Declarer: {}'.format(mighty_game.declarer))
-        print("Final bid: {} {}".format(mighty_game.trump.long(), mighty_game.bid))
+        print("Final bid: {} {}".format(
+            mighty_game.trump.long(), mighty_game.bid))
         print("Card exchange in process.")
         if mighty_game.declarer in ai_players:
             to_discard, final_trump = ai_exchanger(mighty_game.hands[mighty_game.declarer] + mighty_game.kitty,
                                                    mighty_game.trump)
         else:
-            input('Player {} - Press Enter to reveal the kitty'.format(mighty_game.declarer))
+            input(
+                'Player {} - Press Enter to reveal the kitty'.format(mighty_game.declarer))
             print(' '.join([str(c) for c in mighty_game.kitty]))
             while True:
-                to_discard = input("Enter the three cards to discard, space seperated: ")
+                to_discard = input(
+                    "Enter the three cards to discard, space seperated: ")
                 to_discard = to_discard.split()
                 if to_discard and all(
                         [Card.is_cardstr(x) and Card(*Card.str_to_vals(x)) in mighty_game.hands[
                             mighty_game.declarer] + mighty_game.kitty for x in to_discard]):
-                    to_discard = [Card(*Card.str_to_vals(x)) for x in to_discard]
+                    to_discard = [Card(*Card.str_to_vals(x))
+                                  for x in to_discard]
                     break
                 print("Invalid input.")
 
@@ -234,7 +239,7 @@ while True:
         print('Exchange over.')
         feedback = mighty_game.exchange(to_discard)
 
-    elif call_type == engine.CallType('trump change'):
+    elif call_type == CallType.TRUMP_CHANGE:
         prev_trump = mighty_game.trump
         if mighty_game.declarer in human_players:
             while True:
@@ -252,24 +257,29 @@ while True:
 
         changed_or_fixed = 'changed' if new_trump != prev_trump else 'fixed'
 
-        print("The trump suit has been {} to {}.".format(changed_or_fixed, final_trump.long()))
-        print('The final bid is {} {}.'.format(mighty_game.trump.long(), mighty_game.bid))
+        print("The trump suit has been {} to {}.".format(
+            changed_or_fixed, final_trump.long()))
+        print('The final bid is {} {}.'.format(
+            mighty_game.trump.long(), mighty_game.bid))
 
-    elif call_type == engine.CallType('miss-deal check'):
+    elif call_type == CallType.MISS_DEAL_CHECK:
         print("Miss-deal check in process.")
         deal_miss = [False] * 5
         for player in range(5):
             call_miss_deal = False
             if constructs.is_miss_deal(mighty_game.hands[player], mighty_game.mighty):
                 if player in ai_players:
-                    call_miss_deal = ai_miss_deal_caller(mighty_game.hands[player], mighty_game.trump)
+                    call_miss_deal = ai_miss_deal_caller(
+                        mighty_game.hands[player], mighty_game.trump)
                 else:
-                    yes_or_no = input('Player {} - Call miss-deal?: '.format(player))
+                    yes_or_no = input(
+                        'Player {} - Call miss-deal?: '.format(player))
                     if yes_or_no.lower() in ('y', 'yes'):
                         call_miss_deal = True
                 if call_miss_deal:
                     print("Player {} announces miss-deal!".format(player))
-                    print(' '.join([str(c) for c in mighty_game.hands[player]]))
+                    print(' '.join([str(c)
+                                    for c in mighty_game.hands[player]]))
                 deal_miss[player] = call_miss_deal
 
         for player in range(5):
@@ -278,14 +288,15 @@ while True:
                 print('Fuck.')
                 print(feedback)
                 raise RuntimeError
-            if mighty_game.next_call != engine.CallType('miss-deal check'):
+            if mighty_game.next_call != CallType.MISS_DEAL_CHECK:
                 print("Miss-deal check over.")
                 break
 
-    elif call_type == engine.CallType('friend call'):
+    elif call_type == CallType.FRIEND_CALL:
         print("Friend to be called.")
         if mighty_game.declarer in ai_players:
-            friend_card = ai_friend_caller(mighty_game.hands[mighty_game.declarer], mighty_game.trump)
+            friend_card = ai_friend_caller(
+                mighty_game.hands[mighty_game.declarer], mighty_game.trump)
         else:
             while True:
                 friend_card = input("Enter friend card: ")
@@ -297,14 +308,14 @@ while True:
         print("{} friend called.".format(card_repr(friend_card)))
         feedback = mighty_game.friend_call(friend_card)
 
-    elif call_type == engine.CallType('redeal'):
+    elif call_type == CallType.REDEAL:
         print("REDEAL IN PROCESS.")
         mighty_game = engine.GameEngine()
         print("REDEAL COMPLETE.")
         print()
         introduce_hands(mighty_game.hands, human_players)
 
-    elif call_type == engine.CallType('play'):
+    elif call_type == CallType.PLAY:
 
         # Below block finds whose turn it is.
         player = mighty_game.leader
@@ -325,12 +336,14 @@ while True:
         if player in ai_players:
             play = ai_player(perspective)
         else:
-            valid_plays = constructs.legal_plays(mighty_game.perspective(player))
+            valid_plays = constructs.legal_plays(
+                mighty_game.perspective(player))
             print("Choose a play from below by index:")
             for i in range(len(valid_plays)):
                 print(f"{i}: {valid_plays[i]}")
             while True:
-                playnum = input("Player {} - Enter play number: ".format(player))
+                playnum = input(
+                    "Player {} - Enter play number: ".format(player))
                 if playnum.isdigit() and 0 <= int(playnum) < len(valid_plays):
                     playnum = int(playnum)
                     play = valid_plays[playnum]
@@ -348,27 +361,31 @@ while True:
 
         feedback = mighty_game.play(play)
 
-    elif call_type == engine.CallType('game over'):
+    elif call_type == CallType.GAME_OVER:
         break
 
     else:
-        raise RuntimeError("CRITICAL: There is no method of handling specified for call type '{}'".format(call_type))
+        raise RuntimeError(
+            "CRITICAL: There is no method of handling specified for call type '{}'".format(call_type))
 
     if feedback:
-        raise RuntimeError('Calltype: {}, Error #{}'.format(mighty_game.next_call, feedback))
+        raise RuntimeError('Calltype: {}, Error #{}'.format(
+            mighty_game.next_call, feedback))
 
     if mighty_game.recent_winner is not None:
         print("Trick won by Player {}!".format(mighty_game.recent_winner))
         for p in range(5):
             if p not in (mighty_game.declarer, mighty_game.friend):
-                print('Player {}: {} points'.format(p, len(mighty_game.point_cards[p])))
+                print('Player {}: {} points'.format(
+                    p, len(mighty_game.point_cards[p])))
         print()
 
     print('-------------------------------')
 
 print("The game is over.")
 print("The bid was {} {}.".format(mighty_game.trump.long(), mighty_game.bid))
-print("The Declarer and Friend collected {} points.".format(mighty_game.declarer_team_points))
+print("The Declarer and Friend collected {} points.".format(
+    mighty_game.declarer_team_points))
 print("Did the Declarer win?: {}".format(mighty_game.declarer_won))
 print("The following gamepoints are rewarded to each player:")
 for player in range(len(mighty_game.gamepoints_rewarded)):
