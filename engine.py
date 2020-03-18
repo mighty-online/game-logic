@@ -81,6 +81,12 @@ class GameEngine:
 
     def _set_winners(self, gamepoint_transfer_function=None) -> None:
         """Sets the gamepoints to be rewarded to each player after game ends."""
+
+        assert self.declarer is not None
+        assert self.bid is not None
+        assert self.trump is not None
+        assert self.called_friend is not None
+
         if gamepoint_transfer_function is None:
             gamepoint_transfer_function = cs.default_gamepoint_transfer_unit
 
@@ -197,6 +203,8 @@ class GameEngine:
         Returns 1 on unexpected call.
         Returns 2 on invalid discarding_cards list
         """
+        assert self.declarer is not None
+
         if self.next_call != CallType.EXCHANGE:
             return 1
 
@@ -272,6 +280,7 @@ class GameEngine:
             return 2
 
         if miss_deal:
+            assert self.mighty is not None
             # fake miss-deal call
             if not cs.is_miss_deal(self.hands[player], self.mighty):
                 return 3
@@ -313,6 +322,8 @@ class GameEngine:
         Returns 6 when suit_led is expected but not set.
         Returns 7 on unexpected suit_led value.
         """
+        assert self.trump is not None
+
         if self.next_call != CallType.PLAY:
             return 1
 
@@ -357,7 +368,8 @@ class GameEngine:
 
         # The trick is over
         if len(self.current_trick) == 5:
-            trick_winner = cs.trick_winner(len(self.completed_tricks), self.current_trick, self.trump)
+            trick_winner = cs.trick_winner(
+                len(self.completed_tricks), self.current_trick, self.trump)
 
             point_cards = [
                 play.card for play in self.current_trick if play.card.is_pointcard()]
