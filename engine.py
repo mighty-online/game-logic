@@ -37,7 +37,8 @@ class GameEngine:
         self.completed_tricks = []
         self.trick_winners = []
         self.current_trick = []
-        self.previous_suit_leds = []  # necessary to prevent the suit led information of the Joker from being lost
+        # necessary to prevent the suit led information of the Joker from being lost
+        self.previous_suit_leds = []
         self.suit_led = None
 
         # Setup: declarer, trump, bid, friend, friend_card
@@ -83,6 +84,12 @@ class GameEngine:
 
     def _set_winners(self, gamepoint_transfer_function=None) -> None:
         """Sets the gamepoints to be rewarded to each player after game ends."""
+
+        assert self.declarer is not None
+        assert self.bid is not None
+        assert self.trump is not None
+        assert self.called_friend is not None
+
         if gamepoint_transfer_function is None:
             gamepoint_transfer_function = cs.default_gamepoint_transfer_unit
 
@@ -152,7 +159,8 @@ class GameEngine:
                     if player != bidder:
                         self.bids[player] = (None, 0)
 
-        if all([b[1] is not None for b in self.bids]):  # i.e. if everyone has passed or made a bid.
+        # i.e. if everyone has passed or made a bid.
+        if all([b[1] is not None for b in self.bids]):
             no_pass_player_count = 0
             declarer_candidate = None
             for player in range(len(self.bids)):
@@ -174,6 +182,8 @@ class GameEngine:
 
                 # The trump suit and bid are set (still open to change after exchange process)
                 self.trump, self.bid = self.bids[declarer_candidate]
+                assert self.trump is not None
+
                 self.mighty = cs.trump_to_mighty(self.trump)
                 self.ripper = cs.trump_to_ripper(self.trump)
 
@@ -196,6 +206,8 @@ class GameEngine:
         Returns 1 on unexpected call.
         Returns 2 on invalid discarding_cards list
         """
+        assert self.declarer is not None
+
         if self.next_call != CallType('exchange'):
             return 1
 
@@ -271,7 +283,9 @@ class GameEngine:
             return 2
 
         if miss_deal:
-            if not cs.is_miss_deal(self.hands[player], self.mighty):  # fake miss-deal call
+            assert self.mighty is not None
+            # fake miss-deal call
+            if not cs.is_miss_deal(self.hands[player], self.mighty):
                 return 3
             else:
                 self.next_call = CallType('redeal')
@@ -311,6 +325,8 @@ class GameEngine:
         Returns 6 when suit_led is expected but not set.
         Returns 7 on unexpected suit_led value.
         """
+        assert self.trump is not None
+
         if self.next_call != CallType('play'):
             return 1
 
@@ -355,9 +371,11 @@ class GameEngine:
 
         # The trick is over
         if len(self.current_trick) == 5:
-            trick_winner = cs.trick_winner(len(self.completed_tricks), self.current_trick, self.trump)
+            trick_winner = cs.trick_winner(
+                len(self.completed_tricks), self.current_trick, self.trump)
 
-            point_cards = [play.card for play in self.current_trick if play.card.is_pointcard()]
+            point_cards = [
+                play.card for play in self.current_trick if play.card.is_pointcard()]
 
             self.point_cards[trick_winner] += point_cards
 
