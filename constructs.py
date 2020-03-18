@@ -112,6 +112,9 @@ class Setup:
         self.friend = friend
         self.friend_call = friend_call
 
+        self.mighty = trump_to_mighty(self.trump)
+        self.ripper = trump_to_ripper(self.trump)
+
 
 class Perspective:
     """The Perspective class, containing all information from the perspective of a single player."""

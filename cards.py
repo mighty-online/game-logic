@@ -206,6 +206,32 @@ class Card:
             yield Card.joker()
 
     @staticmethod
+    def suit_iter(suit):
+        for rank in Rank.iter():
+            yield Card(suit, rank)
+
+    @staticmethod
+    def rank_iter(rank):
+        for suit in Suit.iter():
+            yield Card(suit, rank)
+
+    @staticmethod
+    def clubs():
+        yield from Card.suit_iter(Suit(1))
+
+    @staticmethod
+    def diamonds():
+        yield from Card.suit_iter(Suit(2))
+
+    @staticmethod
+    def hearts():
+        yield from Card.suit_iter(Suit(3))
+
+    @staticmethod
+    def spades():
+        yield from Card.suit_iter(Suit(4))
+
+    @staticmethod
     def joker():
         """Returns a joker."""
         return Card(Suit(0), Rank(0))
