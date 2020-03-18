@@ -5,7 +5,7 @@ Classes directly connected to the GameEngine are included in the mighty_engine m
 
 import random
 from cards import *
-from typing import Optional
+from typing import Optional, Tuple, List
 
 
 class Play:
@@ -146,7 +146,7 @@ def default_gamepoint_transfer_unit(declarer_won: bool, multiplier: int, bid: in
         return multiplier * (bid - declarer_cards_won)
 
 
-def gamepoint_rewards(declarer_team_points: int, declarer: int, friend: int, bid: int, trump: Suit,
+def gamepoint_rewards(declarer_team_points: int, declarer: int, friend: Optional[int], bid: int, trump: Suit,
                       friend_call: FriendCall,
                       minimum_bid: int, gamepoint_transfer_unit_function=default_gamepoint_transfer_unit) -> list:
     """Returns the gamepoint rewards to each player."""
@@ -154,7 +154,11 @@ def gamepoint_rewards(declarer_team_points: int, declarer: int, friend: int, bid
 
     multiplier = 1
     if friend_call.is_no_friend():
+        assert friend is None
         multiplier *= 2
+    else:
+        assert friend is not None
+
     if trump.is_nosuit():
         multiplier *= 2
     if declarer_won and declarer_team_points == 20:  # run
@@ -162,7 +166,8 @@ def gamepoint_rewards(declarer_team_points: int, declarer: int, friend: int, bid
     if not declarer_won and declarer_team_points < 10:  # back-run
         multiplier *= 2
 
-    unit = gamepoint_transfer_unit_function(declarer_won, multiplier, bid, declarer_team_points, minimum_bid)
+    unit = gamepoint_transfer_unit_function(
+        declarer_won, multiplier, bid, declarer_team_points, minimum_bid)
 
     rewards = [0] * 5
     # First, the gamepoints are rewarded as if the declarer won.
@@ -210,8 +215,10 @@ def trick_winner(trick_number: int, trick: list, trump: Suit) -> int:
                     return play.player
 
     suit_led = trick[0].suit_led
-    for target_suit in (trump, suit_led):  # Searches for [trumps], then [plays which's suits match the suit led]
-        target_plays = [play for play in trick if play.card.suit == target_suit]
+    # Searches for [trumps], then [plays which's suits match the suit led]
+    for target_suit in (trump, suit_led):
+        target_plays = [
+            play for play in trick if play.card.suit == target_suit]
         if target_plays:
             target_plays.sort(key=lambda p: p.card.power())
             return target_plays[-1].player
@@ -219,7 +226,7 @@ def trick_winner(trick_number: int, trick: list, trump: Suit) -> int:
     raise RuntimeError('No winning card found in trick')
 
 
-def deal_deck() -> tuple:
+def deal_deck() -> Tuple[List[List[Card]], List[Card]]:
     """Randomly shuffles and deals the deck to 5 players and the kitty."""
     hands = []
     deck = list(Card.iter())
@@ -298,7 +305,8 @@ def is_valid_move(trick_number: int, trick: list, suit_led: Optional[Suit], trum
                 if play.card.is_joker():
                     return True
                 else:
-                    if any([c.suit == suit_led for c in hand]):  # i.e. if a card of the suit led is in the hand
+                    # i.e. if a card of the suit led is in the hand
+                    if any([c.suit == suit_led for c in hand]):
                         if play.card.suit == suit_led:
                             return True
                         else:
@@ -318,7 +326,8 @@ def legal_plays(perspective: Perspective):
         if len(perspective.current_trick) == 0:
             if card.is_joker():
                 for specifying_suit_led in Suit.iter():
-                    play_candidates.append(LeadingPlay(perspective.player, card, specifying_suit_led))
+                    play_candidates.append(LeadingPlay(
+                        perspective.player, card, specifying_suit_led))
             else:
                 play_candidates.append(LeadingPlay(perspective.player, card))
                 if card == ripper:
