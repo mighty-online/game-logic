@@ -11,6 +11,16 @@ from typing import Optional
 space = 100
 card_mode = 0  # 0 for standard card string, 1 for unicode representations
 
+boom = False
+try:
+    x = CallType('bid')
+    raise AssertionError(
+        'Legacy CallType construction must raise an exception')
+except:
+    boom = True
+
+del boom
+
 
 def card_repr(card: Card) -> str:
     if card_mode == 1:

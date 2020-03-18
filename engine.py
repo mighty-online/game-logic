@@ -19,9 +19,6 @@ class CallType(Enum):
     PLAY = auto()
     GAME_OVER = auto()
 
-    def __init__(self):
-        raise Exception("This enum must not be constructed with this way")
-
 
 class GameEngine:
     """The class to wrap all the data manipulation and processes for a game."""
@@ -146,6 +143,8 @@ class GameEngine:
 
                 # The trump suit and bid are set (still open to change after exchange process)
                 self.trump, self.bid = self.bids[declarer_candidate]
+                assert self.trump is not None
+
                 self.mighty = cs.trump_to_mighty(self.trump)
                 self.ripper = cs.trump_to_ripper(self.trump)
 
