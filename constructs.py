@@ -5,7 +5,7 @@ Classes directly connected to the GameEngine are included in the mighty_engine m
 
 import random
 from cards import *
-from typing import Optional
+from typing import Optional, Tuple, List
 
 
 class Play:
@@ -226,7 +226,7 @@ def trick_winner(trick_number: int, trick: list, trump: Suit) -> int:
     raise RuntimeError('No winning card found in trick')
 
 
-def deal_deck() -> tuple:
+def deal_deck() -> Tuple[List[List[Card]], List[Card]]:
     """Randomly shuffles and deals the deck to 5 players and the kitty."""
     hands = []
     deck = list(Card.iter())
