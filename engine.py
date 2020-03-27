@@ -73,11 +73,16 @@ class GameEngine:
         self.declarer_team_points = None
         self.gamepoints_rewarded = [0] * 5
 
-    def _perspective_data(self, player: int) -> list:
-        """Packages the perspective data of the given player."""
+    def perspective(self, player: int) -> cs.Perspective:
+        """Returns the perspective of the given player."""
         kitty_or_none = self.kitty[:] if player == self.declarer else None
-        return [player, self.hands[player][:], kitty_or_none, self.completed_tricks, self.trick_winners,
-                self.current_trick, self.previous_suit_leds[:], self.suit_led, self.setup()]
+        return cs.Perspective(player, self.hands[player], kitty_or_none, self.point_cards, self.completed_tricks,
+                              self.trick_winners, self.current_trick, self.previous_suit_leds, self.suit_led,
+                              self.declarer, self.trump, self.bid, self.friend, self.called_friend,
+                              self.friend_just_revealed, self.mighty, self.ripper, self.hand_confirmed,
+                              self.next_bidder, self.minimum_bid, self.highest_bid, self.trump_candidate, self.bids,
+                              self.next_call, self.leader, self.declarer_won, self.declarer_team_points,
+                              self.gamepoints_rewarded)
 
     def _set_winners(self, gamepoint_transfer_function=None) -> None:
         """Sets the gamepoints to be rewarded to each player after game ends."""
@@ -104,13 +109,6 @@ class GameEngine:
 
     def __repr__(self):
         return "<GameEngine object at {}>".format(self.next_call)
-
-    def setup(self):
-        return cs.Setup(self.declarer, self.trump, self.bid, self.friend, self.called_friend)
-
-    def perspective(self, player: int) -> cs.Perspective:
-        """Returns the perspective of the given player."""
-        return cs.Perspective(*self._perspective_data(player))
 
     def trick_complete(self):
         return self.completed_tricks and not self.current_trick

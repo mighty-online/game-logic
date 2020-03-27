@@ -102,28 +102,21 @@ class FriendCall:
             raise RuntimeError("Don't mess with my private attributes.")
 
 
-class Setup:
-    """The Setup class, containing declarer, trump, bid, friend and friend_call."""
-
-    def __init__(self, declarer, trump, bid, friend, friend_call):
-        self.declarer = declarer
-        self.trump = trump
-        self.bid = bid
-        self.friend = friend
-        self.friend_call = friend_call
-
-        self.mighty = trump_to_mighty(self.trump)
-        self.ripper = trump_to_ripper(self.trump)
-
-
 class Perspective:
     """The Perspective class, containing all information from the perspective of a single player."""
 
-    def __init__(self, player, hand, kitty: Optional[list], completed_tricks, trick_winners, current_trick,
-                 previous_suit_leds, suit_led, setup: Setup):
+    def __init__(self, player, hand, kitty_or_none, point_cards, completed_tricks, trick_winners, current_trick,
+                 previous_suit_leds, suit_led, declarer, trump, bid, friend, called_friend, friend_just_revealed,
+                 mighty, ripper, hand_confirmed, next_bidder, minimum_bid, highest_bid, trump_candidate, bids,
+                 next_call, leader, declarer_won, declarer_team_points, gamepoints_rewarded):
+        if player == declarer:
+            assert kitty_or_none is not None
+
         self.player = player
+
         self.hand = hand
-        self.kitty = kitty  # If not the declarer, the kitty should be None
+        self.kitty = kitty_or_none  # If not the declarer, the kitty should be None
+        self.point_cards = point_cards
 
         self.completed_tricks = completed_tricks
         self.trick_winners = trick_winners
@@ -131,10 +124,32 @@ class Perspective:
         self.previous_suit_leds = previous_suit_leds
         self.suit_led = suit_led
 
-        self.setup = setup
+        self.declarer = declarer
+        self.trump = trump
+        self.bid = bid
+        self.friend = friend
+        self.called_friend = called_friend
 
-        if player == setup.declarer:
-            assert kitty is not None
+        self.friend_just_revealed = friend_just_revealed
+
+        self.mighty = mighty
+        self.ripper = ripper
+
+        self.hand_confirmed = hand_confirmed
+
+        self.next_bidder = next_bidder
+        self.minimum_bid = minimum_bid
+        self.highest_bid = highest_bid
+        self.trump_candidate = trump_candidate
+        self.bids = bids
+
+        self.next_call = next_call
+
+        self.leader = leader
+
+        self.declarer_won = declarer_won
+        self.declarer_team_points = declarer_team_points
+        self.gamepoints_rewarded = gamepoints_rewarded
 
 
 def default_gamepoint_transfer_unit(declarer_won: bool, multiplier: int, bid: int, declarer_cards_won: int,
@@ -323,7 +338,7 @@ def legal_plays(perspective: Perspective):
             next_player(perspective.current_trick[-1].player) == perspective.player):
         raise RuntimeError("It is not the player's turn.")
     plays = []
-    ripper = trump_to_ripper(perspective.setup.trump)
+    ripper = trump_to_ripper(perspective.trump)
     play_candidates = []
     for card in perspective.hand:
         if len(perspective.current_trick) == 0:
@@ -340,7 +355,7 @@ def legal_plays(perspective: Perspective):
 
     for play in play_candidates:
         if is_valid_move(len(perspective.completed_tricks), perspective.current_trick, perspective.suit_led,
-                         perspective.setup.trump, perspective.hand, play):
+                         perspective.trump, perspective.hand, play):
             plays.append(play)
     return plays
 
