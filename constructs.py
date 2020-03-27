@@ -6,6 +6,7 @@ Classes directly connected to the GameEngine are included in the mighty_engine m
 import random
 from cards import *
 from typing import Optional, Tuple, List
+from copy import deepcopy
 
 
 class Play:
@@ -114,42 +115,42 @@ class Perspective:
 
         self.player = player
 
-        self.hand = hand
+        self.hand = hand[:]
         self.kitty = kitty_or_none  # If not the declarer, the kitty should be None
-        self.point_cards = point_cards
+        self.point_cards = deepcopy(point_cards)
 
-        self.completed_tricks = completed_tricks
-        self.trick_winners = trick_winners
-        self.current_trick = current_trick
-        self.previous_suit_leds = previous_suit_leds
-        self.suit_led = suit_led
+        self.completed_tricks = deepcopy(completed_tricks)
+        self.trick_winners = trick_winners[:]
+        self.current_trick = deepcopy(current_trick)
+        self.previous_suit_leds = deepcopy(previous_suit_leds)
+        self.suit_led = deepcopy(suit_led)
 
         self.declarer = declarer
-        self.trump = trump
+        self.trump = deepcopy(trump)
         self.bid = bid
         self.friend = friend
-        self.called_friend = called_friend
+        self.called_friend = deepcopy(called_friend)
 
         self.friend_just_revealed = friend_just_revealed
 
-        self.mighty = mighty
-        self.ripper = ripper
+        self.mighty = deepcopy(mighty)
+        self.ripper = deepcopy(ripper)
 
-        self.hand_confirmed = hand_confirmed
+        self.hand_confirmed = hand_confirmed[:]
 
         self.next_bidder = next_bidder
         self.minimum_bid = minimum_bid
         self.highest_bid = highest_bid
-        self.trump_candidate = trump_candidate
-        self.bids = bids
+        self.trump_candidate = deepcopy(trump_candidate)
+        self.bids = deepcopy(bids)
 
-        self.next_call = next_call
+        self.next_call = deepcopy(next_call)
 
         self.leader = leader
 
         self.declarer_won = declarer_won
         self.declarer_team_points = declarer_team_points
-        self.gamepoints_rewarded = gamepoints_rewarded
+        self.gamepoints_rewarded = gamepoints_rewarded[:]
 
 
 def default_gamepoint_transfer_unit(declarer_won: bool, multiplier: int, bid: int, declarer_cards_won: int,
