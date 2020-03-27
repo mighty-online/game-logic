@@ -174,8 +174,6 @@ def gamepoint_rewards(declarer_team_points: int, declarer: int, friend: Optional
     if friend_call.is_no_friend():
         assert friend is None
         multiplier *= 2
-    else:
-        assert friend is not None
 
     if trump.is_nosuit():
         multiplier *= 2
