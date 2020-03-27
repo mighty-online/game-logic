@@ -29,7 +29,11 @@ def random_random_player(perspective: constructs.Perspective) -> constructs.Play
     return random.choice(valid_moves)
 
 
-def random_random_bidder(hand: list, prev_trump: Optional[Suit], highest_bid: int, minimum_bid: int) -> tuple:
+def random_random_bidder(perspective: constructs.Perspective) -> tuple:
+    hand = perspective.hand
+    minimum_bid = perspective.minimum_bid
+    highest_bid = perspective.highest_bid
+
     """A very random AI bidder of Mighty"""
     # Note that you can call one less with a no-trump
     suit_counts = {}
@@ -58,22 +62,29 @@ def random_random_bidder(hand: list, prev_trump: Optional[Suit], highest_bid: in
     return None, 0
 
 
-def imma_call_miss_deal(hand: list, trump: Suit) -> bool:
+def imma_call_miss_deal(perspective: constructs.Perspective) -> bool:
     """Will always call miss-deal. That is, this function simply returns True."""
+    hand = perspective.hand
+    trump = perspective.trump
     return True
 
 
-def random_random_exchanger(hand: list, trump: Suit) -> tuple:
+def random_random_exchanger(perspective: constructs.Perspective) -> tuple:
     """Returns three cards to discard and the trump to change to, on a very random basis."""
+    hand = perspective.hand
+    trump = perspective.trump
     random.shuffle(hand)
     return hand[:3], trump
 
 
-def mighty_joker_trump_friend_caller(hand: list, trump: Suit) -> constructs.FriendCall:
+def mighty_joker_trump_friend_caller(perspective: constructs.Perspective) -> constructs.FriendCall:
     """Calls the friend card, prioritizing the mighty, followed by joker, then a card of the trump suit.
 
     Doesn't call itself."""
-    mighty = constructs.trump_to_mighty(trump)
+    hand = perspective.hand
+    trump = perspective.trump
+    mighty = perspective.mighty
+
     if mighty not in hand:
         return constructs.FriendCall(0, mighty)
     elif not any([c.is_joker() for c in hand]):
