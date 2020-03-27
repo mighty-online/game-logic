@@ -33,6 +33,7 @@ def random_random_bidder(perspective: constructs.Perspective) -> tuple:
     hand = perspective.hand
     minimum_bid = perspective.minimum_bid
     highest_bid = perspective.highest_bid
+    prev_trump = perspective.trump_candidate
 
     """A very random AI bidder of Mighty"""
     # Note that you can call one less with a no-trump
@@ -191,8 +192,7 @@ while True:
         print("Bid must be greater or equal to {}.".format(lower_bound))
 
         if mighty_game.next_bidder in ai_players:
-            trump, bid = ai_bidder(mighty_game.hands[mighty_game.next_bidder], mighty_game.trump_candidate,
-                                   mighty_game.highest_bid, mighty_game.minimum_bid)
+            trump, bid = ai_bidder(mighty_game.perspective(mighty_game.next_bidder))
         else:
             print("To pass, enter 0 for the bid.")
             while True:
@@ -227,8 +227,7 @@ while True:
             mighty_game.trump.long(), mighty_game.bid))
         print("Card exchange in process.")
         if mighty_game.declarer in ai_players:
-            to_discard, final_trump = ai_exchanger(mighty_game.hands[mighty_game.declarer] + mighty_game.kitty,
-                                                   mighty_game.trump)
+            to_discard, final_trump = ai_exchanger(mighty_game.perspective(mighty_game.declarer))
         else:
             input(
                 'Player {} - Press Enter to reveal the kitty'.format(mighty_game.declarer))
@@ -278,8 +277,7 @@ while True:
             call_miss_deal = False
             if constructs.is_miss_deal(mighty_game.hands[player], mighty_game.mighty):
                 if player in ai_players:
-                    call_miss_deal = ai_miss_deal_caller(
-                        mighty_game.hands[player], mighty_game.trump)
+                    call_miss_deal = ai_miss_deal_caller(mighty_game.perspective(player))
                 else:
                     yes_or_no = input(
                         'Player {} - Call miss-deal?: '.format(player))
@@ -304,7 +302,7 @@ while True:
     elif call_type == CallType.FRIEND_CALL:
         print("Friend to be called.")
         if mighty_game.declarer in ai_players:
-            friend_call = ai_friend_caller(mighty_game.hands[mighty_game.declarer], mighty_game.trump)
+            friend_call = ai_friend_caller(mighty_game.perspective(mighty_game.declarer))
         else:
             while True:
                 friend_choice = input("Enter friend card or enter ftw or enter nf: ")
@@ -405,7 +403,6 @@ while True:
     if feedback:
         raise RuntimeError('Calltype: {}, Error #{}'.format(
             mighty_game.next_call, feedback))
-
 
     print('-------------------------------')
     if ai_num != 5:
