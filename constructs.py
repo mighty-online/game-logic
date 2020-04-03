@@ -7,6 +7,7 @@ import random
 from cards import *
 from typing import Optional, Tuple, List
 from copy import deepcopy
+from engine import CallType
 
 
 class Play:
@@ -336,6 +337,7 @@ def legal_plays(perspective: Perspective):
     if not (len(perspective.current_trick) == 0 or
             next_player(perspective.current_trick[-1].player) == perspective.player):
         raise RuntimeError("It is not the player's turn.")
+    assert perspective.next_call == CallType.PLAY
     plays = []
     ripper = trump_to_ripper(perspective.trump)
     play_candidates = []
