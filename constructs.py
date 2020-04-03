@@ -116,7 +116,7 @@ class Perspective:
         self.player = player
 
         self.hand = hand[:]
-        self.kitty = kitty_or_none  # If not the declarer, the kitty should be None
+        self.kitty = deepcopy(kitty_or_none)  # If not the declarer, the kitty should be None
         self.point_cards = deepcopy(point_cards)
 
         self.completed_tricks = deepcopy(completed_tricks)

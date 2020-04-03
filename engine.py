@@ -75,7 +75,7 @@ class GameEngine:
 
     def perspective(self, player: int) -> cs.Perspective:
         """Returns the perspective of the given player."""
-        kitty_or_none = self.kitty[:] if player == self.declarer else None
+        kitty_or_none = self.kitty if player == self.declarer else None
         return cs.Perspective(player, self.hands[player], kitty_or_none, self.point_cards, self.completed_tricks,
                               self.trick_winners, self.current_trick, self.previous_suit_leds, self.suit_led,
                               self.declarer, self.trump, self.bid, self.friend, self.called_friend,
