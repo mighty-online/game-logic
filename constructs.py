@@ -7,7 +7,18 @@ import random
 from cards import *
 from typing import Optional, Tuple, List
 from copy import deepcopy
-from engine import CallType
+from enum import Enum, auto
+
+
+class CallType(Enum):
+    BID = auto()
+    EXCHANGE = auto()
+    TRUMP_CHANGE = auto()
+    MISS_DEAL_CHECK = auto()
+    FRIEND_CALL = auto()
+    REDEAL = auto()
+    PLAY = auto()
+    GAME_OVER = auto()
 
 
 class Play:

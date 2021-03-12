@@ -5,19 +5,8 @@ This module contains all the underlying classes needed for playing a game of mig
 
 from cards import *
 import constructs as cs
-from enum import Enum, auto
 from typing import List, Optional, Tuple
-
-
-class CallType(Enum):
-    BID = auto()
-    EXCHANGE = auto()
-    TRUMP_CHANGE = auto()
-    MISS_DEAL_CHECK = auto()
-    FRIEND_CALL = auto()
-    REDEAL = auto()
-    PLAY = auto()
-    GAME_OVER = auto()
+from constructs import CallType
 
 
 class GameEngine:

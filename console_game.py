@@ -3,7 +3,7 @@
 import random
 from cards import *
 import engine
-from engine import CallType
+from constructs import CallType
 import constructs
 from time import time
 from typing import Optional
