@@ -7,6 +7,55 @@ from cards import *
 import constructs as cs
 from typing import List, Optional, Tuple
 from constructs import CallType
+from enum import IntEnum, auto
+
+
+class BiddingReturnType(IntEnum):
+
+    VALID = 0
+    UNEXPECTED_CALL = auto()
+    INVALID_BIDDER = auto()
+    INVALID_BID = auto()
+
+
+class ExchangeReturnType(IntEnum):
+
+    VALID = 0
+    UNEXPECTED_CALL = auto()
+    INVALID_DISCARDING = auto()
+
+
+class TrumpChangeReturnType(IntEnum):
+
+    VALID = 0
+    UNEXPECTED_CALL = auto()
+    UNABLE_BID = auto()
+
+
+class MissDealCheckReturnType(IntEnum):
+
+    VALID = 0
+    UNEXPECTED_CALL = auto()
+    INVALID_PLAYER = auto()
+    INVALID_MISS_DEAL_CALL = auto()
+
+
+class FriendCallReturnType(IntEnum):
+
+    VALID = 0
+    UNEXPECTED_CALL = auto()
+
+
+class PlayReturnType(IntEnum):
+
+    VALID = 0
+    UNEXPECTED_CALL = auto()
+    INVALID_PLAYER = auto()
+    INVALID_CARD = auto()
+    INVALID_PLAY = auto()
+    INVALID_JOKER_CALL = auto()
+    SUIT_LED_NOT_SET = auto()
+    UNEXPECTED_SUIT_LED = auto()
 
 
 class GameEngine:
@@ -115,11 +164,11 @@ class GameEngine:
         A pass is indicated by a bid of 0.
         """
         if self.next_call != CallType.BID:
-            return 1
+            return BiddingReturnType.UNEXPECTED_CALL
 
         # If unexpected bidder is given
         if self.next_bidder != bidder:
-            return 2
+            return BiddingReturnType.INVALID_BIDDER
 
         if bid == 0:
             self.bids[bidder] = (None, 0)
@@ -131,7 +180,7 @@ class GameEngine:
                 is_valid = cs.is_valid_bid(trump, bid, self.minimum_bid)
 
             if not is_valid:
-                return 3
+                return BiddingReturnType.INVALID_BID
 
             self.bids[bidder] = (trump, bid)
             self.highest_bid = bid
@@ -158,7 +207,7 @@ class GameEngine:
                     self.bids = [(None, None) for _ in range(5)]
                 else:  # If everyone passes even with 12 as the lower bound, there should be a redeal.
                     self.next_call = CallType.REDEAL
-                    return 0
+                    return BiddingReturnType.VALID
 
             if no_pass_player_count == 1:  # Bidding has ended.
                 assert isinstance(declarer_candidate, int)
@@ -172,7 +221,7 @@ class GameEngine:
                 self.ripper = cs.trump_to_ripper(self.trump)
 
                 self.next_call = CallType.EXCHANGE
-                return 0
+                return BiddingReturnType.VALID
 
         # The loop below finds the next bidder, ignoring players who passed.
         while True:
@@ -180,7 +229,7 @@ class GameEngine:
             if self.bids[self.next_bidder][1] != 0:
                 break
 
-        return 0
+        return BiddingReturnType.VALID
 
     def exchange(self, discarding_cards: list) -> int:
         """Given the three cards that the declarer will discard, deals with the exchange process.
@@ -193,10 +242,10 @@ class GameEngine:
         assert self.declarer is not None
 
         if self.next_call != CallType.EXCHANGE:
-            return 1
+            return ExchangeReturnType.UNEXPECTED_CALL
 
         if len(discarding_cards) != 3:
-            return 2
+            return ExchangeReturnType.INVALID_DISCARDING
 
         declarer_hand = self.hands[self.declarer]
 
@@ -206,7 +255,7 @@ class GameEngine:
 
         # Checks that all discarding cards are in the declarer's hand.
         if not all([c in declarer_hand for c in discarding_cards]):
-            return 2
+            return ExchangeReturnType.INVALID_DISCARDING
 
         # Discards the three cards back into the kitty
         self.kitty = discarding_cards
@@ -217,7 +266,7 @@ class GameEngine:
                 self.point_cards[self.declarer].append(card)
 
         self.next_call = CallType.TRUMP_CHANGE
-        return 0
+        return ExchangeReturnType.VALID
 
     def trump_change(self, trump: Suit) -> int:
         """Given the trump to change to (or to retain), proceeds with the change.
@@ -228,7 +277,7 @@ class GameEngine:
         Returns 2 if bid can't be raised.
         """
         if self.next_call != CallType.TRUMP_CHANGE:
-            return 1
+            return TrumpChangeReturnType.UNEXPECTED_CALL
 
         trump_has_changed = trump != self.trump
 
@@ -239,7 +288,7 @@ class GameEngine:
                 bid_increase = 2
 
             if self.bid + bid_increase > 20:
-                return 2
+                return TrumpChangeReturnType.UNABLE_BID
             else:
                 self.bid += bid_increase
 
@@ -249,7 +298,7 @@ class GameEngine:
         self.ripper = cs.trump_to_ripper(self.trump)
 
         self.next_call = CallType.MISS_DEAL_CHECK
-        return 0
+        return TrumpChangeReturnType.VALID
 
     def miss_deal_check(self, player: int, miss_deal: bool) -> int:
         """Given player and whether that player announces a miss-deal, proceeds with the necessary steps.
@@ -261,16 +310,16 @@ class GameEngine:
         Returns 3 on invalid miss-deal call.
         """
         if self.next_call != CallType.MISS_DEAL_CHECK:
-            return 1
+            return MissDealCheckReturnType.UNEXPECTED_CALL
 
         if not 0 <= player < 5:
-            return 2
+            return MissDealCheckReturnType.INVALID_PLAYER
 
         if miss_deal:
             assert self.mighty is not None
             # fake miss-deal call
             if not cs.is_miss_deal(self.hands[player], self.mighty):
-                return 3
+                return MissDealCheckReturnType.INVALID_MISS_DEAL_CALL
             else:
                 self.next_call = CallType.REDEAL
         else:
@@ -278,7 +327,8 @@ class GameEngine:
             if all(self.hand_confirmed):
                 self.next_call = CallType.FRIEND_CALL
 
-        return 0
+        return MissDealCheckReturnType.VALID
+    
 
     def friend_call(self, friend_call: cs.FriendCall) -> int:
         """Sets the friend call.
@@ -288,13 +338,13 @@ class GameEngine:
         Returns 1 on unexpected call.
         """
         if self.next_call != CallType.FRIEND_CALL:
-            return 1
+            return FriendCallReturnType.UNEXPECTED_CALL
 
         self.called_friend = friend_call
 
         self.next_call = CallType.PLAY
         self.leader = self.declarer
-        return 0
+        return FriendCallReturnType.VALID
 
     def play(self, play: cs.Play) -> int:
         """Given the player and the card played by the player, processes the trick.
@@ -312,36 +362,36 @@ class GameEngine:
         assert self.trump is not None
 
         if self.next_call != CallType.PLAY:
-            return 1
+            return PlayReturnType.UNEXPECTED_CALL
 
         is_leader = len(self.current_trick) == 0
 
         if is_leader:
             if play.player != self.leader:
-                return 2
+                return PlayReturnType.INVALID_PLAYER
         else:
             if play.player != cs.next_player(self.current_trick[-1].player):
-                return 2
+                return PlayReturnType.INVALID_PLAYER
 
         if play.card not in self.hands[play.player]:
-            return 3
+            return PlayReturnType.INVALID_CARD
 
         if play.is_joker_call():
             if not (is_leader and play.card == self.ripper):
-                return 5
+                return PlayReturnType.INVALID_JOKER_CALL
 
         if is_leader:
             if not isinstance(play.suit_led, Suit):
-                return 6
+                return PlayReturnType.SUIT_LED_NOT_SET
 
             self.suit_led = play.suit_led
         else:
             if play.suit_led is not None:
-                return 7
+                return PlayReturnType.UNEXPECTED_SUIT_LED
 
         if not cs.is_valid_move(len(self.completed_tricks), self.current_trick, self.suit_led, self.trump,
                                 self.hands[play.player], play):
-            return 4
+            return PlayReturnType.INVALID_PLAY
 
         self.friend_just_revealed = False
 
@@ -382,4 +432,4 @@ class GameEngine:
                 self._set_winners()
                 self.next_call = CallType.GAME_OVER
 
-        return 0
+        return PlayReturnType.VALID
