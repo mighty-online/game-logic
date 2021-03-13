@@ -11,51 +11,45 @@ from enum import IntEnum, auto
 
 
 class BiddingReturnType(IntEnum):
-
     VALID = 0
-    UNEXPECTED_CALL = auto()
-    INVALID_BIDDER = auto()
-    INVALID_BID = auto()
+    UNEXPECTED_CALL = 1
+    INVALID_BIDDER = 2
+    INVALID_BID = 3
 
 
 class ExchangeReturnType(IntEnum):
-
     VALID = 0
-    UNEXPECTED_CALL = auto()
-    INVALID_DISCARDING = auto()
+    UNEXPECTED_CALL = 1
+    INVALID_DISCARDING = 2
 
 
 class TrumpChangeReturnType(IntEnum):
-
     VALID = 0
-    UNEXPECTED_CALL = auto()
-    UNABLE_BID = auto()
+    UNEXPECTED_CALL = 1
+    UNABLE_BID = 2
 
 
 class MissDealCheckReturnType(IntEnum):
-
     VALID = 0
-    UNEXPECTED_CALL = auto()
-    INVALID_PLAYER = auto()
-    INVALID_MISS_DEAL_CALL = auto()
+    UNEXPECTED_CALL = 1
+    INVALID_PLAYER = 2
+    INVALID_MISS_DEAL_CALL = 3
 
 
 class FriendCallReturnType(IntEnum):
-
     VALID = 0
-    UNEXPECTED_CALL = auto()
+    UNEXPECTED_CALL = 1
 
 
 class PlayReturnType(IntEnum):
-
     VALID = 0
-    UNEXPECTED_CALL = auto()
-    INVALID_PLAYER = auto()
-    INVALID_CARD = auto()
-    INVALID_PLAY = auto()
-    INVALID_JOKER_CALL = auto()
-    SUIT_LED_NOT_SET = auto()
-    UNEXPECTED_SUIT_LED = auto()
+    UNEXPECTED_CALL = 1
+    INVALID_PLAYER = 2
+    INVALID_CARD = 3
+    INVALID_PLAY = 4
+    INVALID_JOKER_CALL = 5
+    SUIT_LED_NOT_SET = 6
+    UNEXPECTED_SUIT_LED = 7
 
 
 class GameEngine:
@@ -328,7 +322,6 @@ class GameEngine:
                 self.next_call = CallType.FRIEND_CALL
 
         return MissDealCheckReturnType.VALID
-    
 
     def friend_call(self, friend_call: cs.FriendCall) -> int:
         """Sets the friend call.
