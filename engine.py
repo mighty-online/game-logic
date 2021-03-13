@@ -327,7 +327,8 @@ class GameEngine:
             if all(self.hand_confirmed):
                 self.next_call = CallType.FRIEND_CALL
 
-        return MissDealCheckReturnType.VAILD
+        return MissDealCheckReturnType.VALID
+    
 
     def friend_call(self, friend_call: cs.FriendCall) -> int:
         """Sets the friend call.
