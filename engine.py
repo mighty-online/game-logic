@@ -20,13 +20,15 @@ class BiddingReturnType(IntEnum):
 class ExchangeReturnType(IntEnum):
     VALID = 0
     UNEXPECTED_CALL = 1
-    INVALID_DISCARDING = 2
+    INVALID_PLAYER = 2
+    INVALID_DISCARDING = 3
 
 
 class TrumpChangeReturnType(IntEnum):
     VALID = 0
     UNEXPECTED_CALL = 1
-    UNABLE_BID = 2
+    INVALID_PLAYER = 2
+    BID_RAISE_IMPOSSIBLE = 3
 
 
 class MissDealCheckReturnType(IntEnum):
@@ -39,6 +41,7 @@ class MissDealCheckReturnType(IntEnum):
 class FriendCallReturnType(IntEnum):
     VALID = 0
     UNEXPECTED_CALL = 1
+    INVALID_PLAYER = 2
 
 
 class PlayReturnType(IntEnum):
@@ -210,18 +213,22 @@ class GameEngine:
 
         return BiddingReturnType.VALID
 
-    def exchange(self, discarding_cards: list) -> int:
+    def exchange(self, player: int, discarding_cards: list) -> int:
         """Given the three cards that the declarer will discard, deals with the exchange process.
 
         Returns 0 on valid call.
 
         Returns 1 on unexpected call.
-        Returns 2 on invalid discarding_cards list
+        Return 2 on invalid player.
+        Returns 3 on invalid discarding_cards list
         """
         assert self.declarer is not None
 
         if self.next_calltype != CallType.EXCHANGE:
             return ExchangeReturnType.UNEXPECTED_CALL
+
+        if player != self.declarer:
+            return ExchangeReturnType.INVALID_PLAYER
 
         if len(discarding_cards) != 3:
             return ExchangeReturnType.INVALID_DISCARDING
@@ -247,16 +254,20 @@ class GameEngine:
         self.next_calltype = CallType.TRUMP_CHANGE
         return ExchangeReturnType.VALID
 
-    def trump_change(self, trump: Suit) -> int:
+    def trump_change(self, player: int, trump: Suit) -> int:
         """Given the trump to change to (or to retain), proceeds with the change.
 
         Returns 0 on valid call.
 
         Returns 1 on unexpected call.
-        Returns 2 if bid can't be raised.
+        Returns 2 on invalid player.
+        Returns 3 if bid can't be raised.
         """
         if self.next_calltype != CallType.TRUMP_CHANGE:
             return TrumpChangeReturnType.UNEXPECTED_CALL
+
+        if player != self.declarer:
+            return TrumpChangeReturnType.INVALID_PLAYER
 
         trump_has_changed = trump != self.trump
 
@@ -267,7 +278,7 @@ class GameEngine:
                 bid_increase = 2
 
             if self.bid + bid_increase > 20:
-                return TrumpChangeReturnType.UNABLE_BID
+                return TrumpChangeReturnType.BID_RAISE_IMPOSSIBLE
             else:
                 self.bid += bid_increase
 
@@ -308,15 +319,19 @@ class GameEngine:
 
         return MissDealCheckReturnType.VALID
 
-    def friend_call(self, friend_call: cs.FriendCall) -> int:
+    def friend_call(self, player: int, friend_call: cs.FriendCall) -> int:
         """Sets the friend call.
 
         Returns 0 on valid call.
 
         Returns 1 on unexpected call.
+        Returns 2 on invalid player.
         """
         if self.next_calltype != CallType.FRIEND_CALL:
             return FriendCallReturnType.UNEXPECTED_CALL
+
+        if player != self.declarer:
+            return FriendCallReturnType.INVALID_PLAYER
 
         self.called_friend = friend_call
 

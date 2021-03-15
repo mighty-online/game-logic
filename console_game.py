@@ -230,7 +230,7 @@ while True:
             print('\n' * space)
 
         print('Exchange over.')
-        feedback = mighty_game.exchange(to_discard)
+        feedback = mighty_game.exchange(mighty_game.declarer, to_discard)
 
     elif call_type == CallType.TRUMP_CHANGE:
         prev_trump = mighty_game.trump
@@ -239,12 +239,12 @@ while True:
                 final_trump = input("Finalize your trump: ")
                 if Suit.is_suitstr(final_trump):
                     final_trump = Suit.str_to_suit(final_trump)
-                    feedback = mighty_game.trump_change(final_trump)
+                    feedback = mighty_game.trump_change(mighty_game.declarer, final_trump)
                     if feedback == 0:
                         break
                 print("Invalid trump.")
         else:
-            feedback = mighty_game.trump_change(final_trump)
+            feedback = mighty_game.trump_change(mighty_game.declarer, final_trump)
 
         new_trump = mighty_game.trump
 
@@ -304,7 +304,7 @@ while True:
                 print("Invalid card.")
 
         print("{} called.".format(friend_call))
-        feedback = mighty_game.friend_call(friend_call)
+        feedback = mighty_game.friend_call(mighty_game.declarer, friend_call)
 
     elif call_type == CallType.REDEAL:
         print("REDEAL IN PROCESS.")
