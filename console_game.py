@@ -99,19 +99,6 @@ def mighty_joker_trump_friend_caller(pers: constructs.Perspective) -> constructs
         raise RuntimeError("Nope. This can't have happened.")
 
 
-def random_random_suit_led_specifier(pers: constructs.Perspective) -> Suit:
-    """Randomly specifies the suit led when calling the joker."""
-    return random.choice(list(Suit.iter()))
-
-
-def imma_activate_joker_call(pers: constructs.Perspective) -> bool:
-    """Always activates joker call, unless that joker is owned by itself."""
-    if any([c.is_joker() for c in pers.hand]):
-        return False
-    else:
-        return True
-
-
 def introduce_hands(hands: list, players: list) -> None:
     """Introduce the hands of players, revealing and hiding upon Enter."""
     for player in players:
@@ -129,8 +116,6 @@ ai_miss_deal_caller = imma_call_miss_deal
 ai_exchanger = random_random_exchanger
 ai_friend_caller = mighty_joker_trump_friend_caller
 ai_player = random_random_player
-ai_suit_led_specifier = random_random_suit_led_specifier
-ai_joker_call_activator = imma_activate_joker_call
 
 ##############################################
 
@@ -180,7 +165,7 @@ while True:
     input("\nWAITING...")
     ########################################################################
     '''
-    call_type = mighty_game.next_call
+    call_type = mighty_game.next_calltype
     if call_type == CallType.BID:
         print("Player {}'s turn to make a bid.".format(mighty_game.next_bidder))
 
@@ -192,7 +177,7 @@ while True:
         print("Bid must be greater or equal to {}.".format(lower_bound))
 
         if mighty_game.next_bidder in ai_players:
-            trump, bid = ai_bidder(mighty_game.perspective(mighty_game.next_bidder))
+            trump, bid = ai_bidder(mighty_game.get_perspective(mighty_game.next_bidder))
         else:
             print("To pass, enter 0 for the bid.")
             while True:
@@ -227,7 +212,7 @@ while True:
             mighty_game.trump.long(), mighty_game.bid))
         print("Card exchange in process.")
         if mighty_game.declarer in ai_players:
-            to_discard, final_trump = ai_exchanger(mighty_game.perspective(mighty_game.declarer))
+            to_discard, final_trump = ai_exchanger(mighty_game.get_perspective(mighty_game.declarer))
         else:
             input(
                 'Player {} - Press Enter to reveal the kitty'.format(mighty_game.declarer))
@@ -277,7 +262,7 @@ while True:
             call_miss_deal = False
             if constructs.is_miss_deal(mighty_game.hands[player], mighty_game.mighty):
                 if player in ai_players:
-                    call_miss_deal = ai_miss_deal_caller(mighty_game.perspective(player))
+                    call_miss_deal = ai_miss_deal_caller(mighty_game.get_perspective(player))
                 else:
                     yes_or_no = input(
                         'Player {} - Call miss-deal?: '.format(player))
@@ -295,14 +280,14 @@ while True:
                 print('Fuck.')
                 print(feedback)
                 raise RuntimeError
-            if mighty_game.next_call != CallType.MISS_DEAL_CHECK:
+            if mighty_game.next_calltype != CallType.MISS_DEAL_CHECK:
                 print("Miss-deal check over.")
                 break
 
     elif call_type == CallType.FRIEND_CALL:
         print("Friend to be called.")
         if mighty_game.declarer in ai_players:
-            friend_call = ai_friend_caller(mighty_game.perspective(mighty_game.declarer))
+            friend_call = ai_friend_caller(mighty_game.get_perspective(mighty_game.declarer))
         else:
             while True:
                 friend_choice = input("Enter friend card or enter ftw or enter nf: ")
@@ -330,10 +315,7 @@ while True:
 
     elif call_type == CallType.PLAY:
 
-        # Below block finds whose turn it is.
-        player = mighty_game.leader
-        for _ in range(len(mighty_game.current_trick)):
-            player = constructs.next_player(player)
+        player = mighty_game.next_player
 
         if player == mighty_game.leader:
             print("Trick #{}".format(len(mighty_game.completed_tricks) + 1))
@@ -344,13 +326,13 @@ while True:
         print()
         print("Player {}'s turn to play.".format(player))
 
-        perspective = mighty_game.perspective(player)
+        perspective = mighty_game.get_perspective(player)
 
         if player in ai_players:
             play = ai_player(perspective)
         else:
             valid_plays = constructs.legal_plays(
-                mighty_game.perspective(player))
+                mighty_game.get_perspective(player))
             print("Choose a play from below by index:")
             for i in range(len(valid_plays)):
                 print(f"{i}: {valid_plays[i]}")
@@ -375,7 +357,7 @@ while True:
             print("Friend is player {}".format(mighty_game.friend))
             print()
 
-        if mighty_game.trick_complete():
+        if mighty_game.is_trick_complete():
             if ai_num != 5:
                 input()
             print('-------------------------------')
@@ -402,7 +384,7 @@ while True:
 
     if feedback:
         raise RuntimeError('Calltype: {}, Error #{}'.format(
-            mighty_game.next_call, feedback))
+            mighty_game.next_calltype, feedback))
 
     print('-------------------------------')
     if ai_num != 5:

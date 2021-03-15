@@ -95,7 +95,7 @@ class GameEngine:
         self.bids = [(None, None) for _ in range(5)]
 
         # Stores what call type should come next
-        self.next_call = CallType.BID
+        self.next_calltype = CallType.BID
 
         # The leader of the next trick
         self.leader = None
@@ -105,7 +105,10 @@ class GameEngine:
         self.declarer_team_points = None
         self.gamepoints_rewarded = [0] * 5
 
-    def perspective(self, player: int) -> cs.Perspective:
+    def __repr__(self):
+        return "<GameEngine object at {}>".format(self.next_calltype)
+
+    def get_perspective(self, player: int) -> cs.Perspective:
         """Returns the perspective of the given player."""
         kitty_or_none = self.kitty if player == self.declarer else None
         return cs.Perspective(player, self.hands[player], kitty_or_none, self.point_cards, self.completed_tricks,
@@ -113,36 +116,18 @@ class GameEngine:
                               self.declarer, self.trump, self.bid, self.friend, self.called_friend,
                               self.friend_just_revealed, self.mighty, self.ripper, self.hand_confirmed,
                               self.next_bidder, self.minimum_bid, self.highest_bid, self.trump_candidate, self.bids,
-                              self.next_call, self.leader, self.declarer_won, self.declarer_team_points,
+                              self.next_calltype, self.leader, self.declarer_won, self.declarer_team_points,
                               self.gamepoints_rewarded)
 
-    def _set_winners(self, gamepoint_transfer_function=None) -> None:
-        """Sets the gamepoints to be rewarded to each player after game ends."""
+    @property
+    def next_player(self):
+        """Returns the next player, in the PLAY phase.
+        If the engine isn't in the PLAY phase, None is returned.
+        """
+        return cs.next_player(self.next_calltype, self.current_trick, self.leader)
 
-        assert self.declarer is not None
-        assert self.bid is not None
-        assert self.trump is not None
-        assert self.called_friend is not None
-
-        if gamepoint_transfer_function is None:
-            gamepoint_transfer_function = cs.default_gamepoint_transfer_unit
-
-        self.declarer_team_points = len(self.point_cards[self.declarer])
-
-        if self.friend is not None and self.friend != self.declarer:
-            self.declarer_team_points += len(self.point_cards[self.friend])
-
-        self.declarer_won = self.declarer_team_points >= self.bid
-
-        rewards = cs.gamepoint_rewards(self.declarer_team_points, self.declarer, self.friend, self.bid, self.trump,
-                                       self.called_friend, self.minimum_bid, gamepoint_transfer_function)
-
-        self.gamepoints_rewarded = rewards
-
-    def __repr__(self):
-        return "<GameEngine object at {}>".format(self.next_call)
-
-    def trick_complete(self):
+    def is_trick_complete(self):
+        """Checks whether the most recent trick has been completed."""
         return self.completed_tricks and not self.current_trick
 
     def bidding(self, bidder: int, trump: Suit, bid: int) -> int:
@@ -157,7 +142,7 @@ class GameEngine:
         Bids are saved in self.bids in player order, in the form of (trump, bid).
         A pass is indicated by a bid of 0.
         """
-        if self.next_call != CallType.BID:
+        if self.next_calltype != CallType.BID:
             return BiddingReturnType.UNEXPECTED_CALL
 
         # If unexpected bidder is given
@@ -200,7 +185,7 @@ class GameEngine:
                     self.minimum_bid -= 1
                     self.bids = [(None, None) for _ in range(5)]
                 else:  # If everyone passes even with 12 as the lower bound, there should be a redeal.
-                    self.next_call = CallType.REDEAL
+                    self.next_calltype = CallType.REDEAL
                     return BiddingReturnType.VALID
 
             if no_pass_player_count == 1:  # Bidding has ended.
@@ -214,12 +199,12 @@ class GameEngine:
                 self.mighty = cs.trump_to_mighty(self.trump)
                 self.ripper = cs.trump_to_ripper(self.trump)
 
-                self.next_call = CallType.EXCHANGE
+                self.next_calltype = CallType.EXCHANGE
                 return BiddingReturnType.VALID
 
         # The loop below finds the next bidder, ignoring players who passed.
         while True:
-            self.next_bidder = cs.next_player(self.next_bidder)
+            self.next_bidder = cs.player_increment(self.next_bidder)
             if self.bids[self.next_bidder][1] != 0:
                 break
 
@@ -235,7 +220,7 @@ class GameEngine:
         """
         assert self.declarer is not None
 
-        if self.next_call != CallType.EXCHANGE:
+        if self.next_calltype != CallType.EXCHANGE:
             return ExchangeReturnType.UNEXPECTED_CALL
 
         if len(discarding_cards) != 3:
@@ -259,7 +244,7 @@ class GameEngine:
             if card.is_pointcard():
                 self.point_cards[self.declarer].append(card)
 
-        self.next_call = CallType.TRUMP_CHANGE
+        self.next_calltype = CallType.TRUMP_CHANGE
         return ExchangeReturnType.VALID
 
     def trump_change(self, trump: Suit) -> int:
@@ -270,7 +255,7 @@ class GameEngine:
         Returns 1 on unexpected call.
         Returns 2 if bid can't be raised.
         """
-        if self.next_call != CallType.TRUMP_CHANGE:
+        if self.next_calltype != CallType.TRUMP_CHANGE:
             return TrumpChangeReturnType.UNEXPECTED_CALL
 
         trump_has_changed = trump != self.trump
@@ -291,7 +276,7 @@ class GameEngine:
         self.mighty = cs.trump_to_mighty(self.trump)
         self.ripper = cs.trump_to_ripper(self.trump)
 
-        self.next_call = CallType.MISS_DEAL_CHECK
+        self.next_calltype = CallType.MISS_DEAL_CHECK
         return TrumpChangeReturnType.VALID
 
     def miss_deal_check(self, player: int, miss_deal: bool) -> int:
@@ -303,7 +288,7 @@ class GameEngine:
         Returns 2 on invalid player.
         Returns 3 on invalid miss-deal call.
         """
-        if self.next_call != CallType.MISS_DEAL_CHECK:
+        if self.next_calltype != CallType.MISS_DEAL_CHECK:
             return MissDealCheckReturnType.UNEXPECTED_CALL
 
         if not 0 <= player < 5:
@@ -315,11 +300,11 @@ class GameEngine:
             if not cs.is_miss_deal(self.hands[player], self.mighty):
                 return MissDealCheckReturnType.INVALID_MISS_DEAL_CALL
             else:
-                self.next_call = CallType.REDEAL
+                self.next_calltype = CallType.REDEAL
         else:
             self.hand_confirmed[player] = True
             if all(self.hand_confirmed):
-                self.next_call = CallType.FRIEND_CALL
+                self.next_calltype = CallType.FRIEND_CALL
 
         return MissDealCheckReturnType.VALID
 
@@ -330,12 +315,12 @@ class GameEngine:
 
         Returns 1 on unexpected call.
         """
-        if self.next_call != CallType.FRIEND_CALL:
+        if self.next_calltype != CallType.FRIEND_CALL:
             return FriendCallReturnType.UNEXPECTED_CALL
 
         self.called_friend = friend_call
 
-        self.next_call = CallType.PLAY
+        self.next_calltype = CallType.PLAY
         self.leader = self.declarer
         return FriendCallReturnType.VALID
 
@@ -354,17 +339,13 @@ class GameEngine:
         """
         assert self.trump is not None
 
-        if self.next_call != CallType.PLAY:
+        if self.next_calltype != CallType.PLAY:
             return PlayReturnType.UNEXPECTED_CALL
 
         is_leader = len(self.current_trick) == 0
 
-        if is_leader:
-            if play.player != self.leader:
-                return PlayReturnType.INVALID_PLAYER
-        else:
-            if play.player != cs.next_player(self.current_trick[-1].player):
-                return PlayReturnType.INVALID_PLAYER
+        if play.player != self.next_player:
+            return PlayReturnType.INVALID_PLAYER
 
         if play.card not in self.hands[play.player]:
             return PlayReturnType.INVALID_CARD
@@ -423,6 +404,29 @@ class GameEngine:
             # when game is over
             if len(self.completed_tricks) == 10:
                 self._set_winners()
-                self.next_call = CallType.GAME_OVER
+                self.next_calltype = CallType.GAME_OVER
 
         return PlayReturnType.VALID
+
+    def _set_winners(self, gamepoint_transfer_function=None) -> None:
+        """Sets the gamepoints to be rewarded to each player after game ends."""
+
+        assert self.declarer is not None
+        assert self.bid is not None
+        assert self.trump is not None
+        assert self.called_friend is not None
+
+        if gamepoint_transfer_function is None:
+            gamepoint_transfer_function = cs.default_gamepoint_transfer_unit
+
+        self.declarer_team_points = len(self.point_cards[self.declarer])
+
+        if self.friend is not None and self.friend != self.declarer:
+            self.declarer_team_points += len(self.point_cards[self.friend])
+
+        self.declarer_won = self.declarer_team_points >= self.bid
+
+        rewards = cs.gamepoint_rewards(self.declarer_team_points, self.declarer, self.friend, self.bid, self.trump,
+                                       self.called_friend, self.minimum_bid, gamepoint_transfer_function)
+
+        self.gamepoints_rewarded = rewards
