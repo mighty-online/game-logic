@@ -408,4 +408,3 @@ if ai_num == 5:
     end = time()
     assert start is not None
     print(f"The 5 AI game took {end - start} seconds to complete.")
->>>>>>> 7a475bed70a0def3ea41932d400dbb3c152b4c56
