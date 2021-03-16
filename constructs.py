@@ -121,7 +121,7 @@ class Perspective:
     def __init__(self, player, hand, kitty_or_none, point_cards, completed_tricks, trick_winners, current_trick,
                  previous_suit_leds, suit_led, declarer, trump, bid, friend, called_friend, friend_just_revealed,
                  mighty, ripper, hand_confirmed, next_bidder, minimum_bid, highest_bid, trump_candidate, bids,
-                 next_call, leader, declarer_won, declarer_team_points, gamepoints_rewarded):
+                 next_calltype, leader, declarer_won, declarer_team_points, gamepoints_rewarded):
         if player == declarer:
             assert kitty_or_none is not None
 
@@ -156,7 +156,7 @@ class Perspective:
         self.trump_candidate = deepcopy(trump_candidate)
         self.bids = deepcopy(bids)
 
-        self.next_call = deepcopy(next_call)
+        self.next_calltype = deepcopy(next_calltype)
 
         self.leader = leader
 
@@ -217,9 +217,23 @@ def gamepoint_rewards(declarer_team_points: int, declarer: int, friend: Optional
 
 
 # Player number is a value in range(5)
-def next_player(prev_player: int) -> int:
+def player_increment(prev_player: int) -> int:
     """Returns the number of the next player, given the previous player's number."""
     return (prev_player + 1) % 5
+
+
+def next_player(next_calltype: CallType, current_trick: list, leader: int):
+    """Returns the next player, in the PLAY phase.
+    If calltype doesn't match the PLAY phase, None is returned.
+    """
+    if next_calltype != CallType.PLAY:
+        return None
+    else:
+        is_leader = len(current_trick) == 0
+        if is_leader:
+            return leader
+        else:
+            return player_increment(current_trick[-1].player)
 
 
 def trick_winner(trick_number: int, trick: list, trump: Suit) -> int:
@@ -345,10 +359,8 @@ def is_valid_move(trick_number: int, trick: list, suit_led: Optional[Suit], trum
 
 
 def legal_plays(perspective: Perspective):
-    if not (len(perspective.current_trick) == 0 or
-            next_player(perspective.current_trick[-1].player) == perspective.player):
+    if perspective.player != next_player(perspective.next_calltype, perspective.current_trick, perspective.leader):
         raise RuntimeError("It is not the player's turn.")
-    assert perspective.next_call == CallType.PLAY
     plays = []
     ripper = trump_to_ripper(perspective.trump)
     play_candidates = []
@@ -390,3 +402,4 @@ def is_valid_bid(trump: Suit, bid: int, minimum_bid: int, prev_trump: Optional[S
         return True
     else:
         return False
+>>>>>>> 7a475bed70a0def3ea41932d400dbb3c152b4c56
