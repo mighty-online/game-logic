@@ -5,7 +5,7 @@ Classes directly connected to the GameEngine are included in the mighty_engine m
 
 import random
 from cards import *
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Union
 from copy import deepcopy
 from enum import Enum, auto
 
@@ -39,10 +39,10 @@ class Play:
             rep_str += '[JC]'
         return rep_str
 
-    def is_joker_call(self):
+    def is_joker_call(self) -> bool:
         return self._is_joker_call
 
-    def is_leading_play(self):
+    def is_leading_play(self) -> bool:
         return self._is_leading_play
 
 
@@ -95,13 +95,13 @@ class FriendCall:
         else:
             raise ValueError
 
-    def is_card_specified(self):
+    def is_card_specified(self) -> bool:
         return self._fctype == 0
 
-    def is_ftw_friend(self):
+    def is_ftw_friend(self) -> bool:
         return self._fctype == 1
 
-    def is_no_friend(self):
+    def is_no_friend(self) -> bool:
         return self._fctype == 2
 
     def __repr__(self):
@@ -222,7 +222,7 @@ def player_increment(prev_player: int) -> int:
     return (prev_player + 1) % 5
 
 
-def next_player(next_calltype: CallType, current_trick: list, leader: int):
+def next_player(next_calltype: CallType, current_trick: list, leader: int) -> Union[int, None]:
     """Returns the next player, in the PLAY phase.
     If calltype doesn't match the PLAY phase, None is returned.
     """
@@ -358,7 +358,7 @@ def is_valid_move(trick_number: int, trick: list, suit_led: Optional[Suit], trum
                         return True
 
 
-def legal_plays(perspective: Perspective):
+def legal_plays(perspective: Perspective) -> List[Play]:
     if perspective.player != next_player(perspective.next_calltype, perspective.current_trick, perspective.leader):
         raise RuntimeError("It is not the player's turn.")
     plays = []
@@ -402,4 +402,3 @@ def is_valid_bid(trump: Suit, bid: int, minimum_bid: int, prev_trump: Optional[S
         return True
     else:
         return False
->>>>>>> 7a475bed70a0def3ea41932d400dbb3c152b4c56
