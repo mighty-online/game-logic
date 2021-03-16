@@ -445,4 +445,3 @@ class GameEngine:
                                        self.called_friend, self.minimum_bid, gamepoint_transfer_function)
 
         self.gamepoints_rewarded = rewards
->>>>>>> 7a475bed70a0def3ea41932d400dbb3c152b4c56
