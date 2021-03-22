@@ -6,8 +6,8 @@ This module contains all the underlying classes needed for playing a game of mig
 from cards import *
 import constructs as cs
 from typing import List, Optional, Tuple
-from constructs import CallType
-from enum import IntEnum, auto
+from constructs import CallType, Play
+from enum import IntEnum
 
 
 class BiddingReturnType(IntEnum):
@@ -121,6 +121,9 @@ class GameEngine:
                               self.next_bidder, self.minimum_bid, self.highest_bid, self.trump_candidate, self.bids,
                               self.next_calltype, self.leader, self.declarer_won, self.declarer_team_points,
                               self.gamepoints_rewarded)
+
+    def get_legal_plays(self, player: int) -> List[Play]:
+        return cs.legal_plays(self.get_perspective(player))
 
     @property
     def next_player(self):
