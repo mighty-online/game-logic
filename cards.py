@@ -54,6 +54,9 @@ class Suit:
     def __eq__(self, other):
         return isinstance(other, Suit) and self.val == other.val
 
+    def __hash__(self):
+        return self.val
+
     @staticmethod
     def iter(include_nosuit=False):
         start = 0 if include_nosuit else 1
@@ -110,6 +113,9 @@ class Rank:
 
     def __eq__(self, other):
         return isinstance(other, Rank) and self.val == other.val
+
+    def __hash__(self):
+        return self.val
 
     @staticmethod
     def iter(include_norank=False):
@@ -196,6 +202,9 @@ class Card:
 
     def __eq__(self, other):
         return isinstance(other, Card) and self.suit == other.suit and self.rank == other.rank
+
+    def __hash__(self):
+        return hash((self.suit, self.rank))
 
     @staticmethod
     def iter(include_joker=True):

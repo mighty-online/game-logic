@@ -4,7 +4,7 @@ Classes directly connected to the GameEngine are included in the mighty_engine m
 """
 
 import random
-from cards import *
+from .cards import *
 from typing import Optional, Tuple, List, Union
 from copy import deepcopy
 from enum import Enum, auto
@@ -121,7 +121,7 @@ class Perspective:
     def __init__(self, player, hand, kitty_or_none, point_cards, completed_tricks, trick_winners, current_trick,
                  previous_suit_leds, suit_led, declarer, trump, bid, friend, called_friend, friend_just_revealed,
                  mighty, ripper, hand_confirmed, next_bidder, minimum_bid, highest_bid, trump_candidate, bids,
-                 next_calltype, leader, declarer_won, declarer_team_points, gamepoints_rewarded):
+                 next_calltype, leader, declarer_won, declarer_team_points, gamepoints_rewarded, hand_sizes):
         if player == declarer:
             assert kitty_or_none is not None
 
@@ -163,6 +163,9 @@ class Perspective:
         self.declarer_won = declarer_won
         self.declarer_team_points = declarer_team_points
         self.gamepoints_rewarded = gamepoints_rewarded[:]
+
+        # This is to assist the AI
+        self.hand_sizes = hand_sizes
 
 
 def default_gamepoint_transfer_unit(declarer_won: bool, multiplier: int, bid: int, declarer_cards_won: int,
