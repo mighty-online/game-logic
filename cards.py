@@ -27,7 +27,7 @@ class Suit:
 
     @classmethod
     def str_to_suit(cls, suit_str: str):
-        return Suit(Suit.str_to_val(suit_str))
+        return cls(cls.str_to_val(suit_str))
 
     @staticmethod
     def is_suitstr(suit_str: str) -> bool:
@@ -80,7 +80,7 @@ class Rank:
 
     @classmethod
     def str_to_rank(cls, rank_str: str):
-        return Rank(Rank.str_to_val(rank_str))
+        return cls(cls.str_to_val(rank_str))
 
     @staticmethod
     def is_rankstr(rank_str: str) -> bool:
@@ -143,7 +143,7 @@ class Card:
     def str_to_card(cls, card_str: str):
         suit_val, rank_val = Card.str_to_vals(card_str)
         suit, rank = Suit(suit_val), Rank(rank_val)
-        return Card(suit, rank)
+        return cls(suit, rank)
 
     @staticmethod
     def is_cardstr(card_str: str) -> bool:
