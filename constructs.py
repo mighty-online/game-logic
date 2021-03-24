@@ -269,7 +269,7 @@ def trick_winner(trick_number: int, trick: list, trump: Suit) -> int:
             target_plays.sort(key=lambda p: p.card.power())
             return target_plays[-1].player
 
-    raise RuntimeError('No winning card found in trick')
+    raise RuntimeError(f'No winning card found in trick: {trick}')
 
 
 def deal_deck() -> Tuple[List[List[Card]], List[Card]]:
