@@ -240,7 +240,7 @@ def next_player(next_calltype: CallType, current_trick: list, leader: int) -> Un
             return player_increment(current_trick[-1].player)
 
 
-def trick_winner(trick_number: int, trick: list, trump: Suit) -> int:
+def trick_winner(trump: Suit, trick_number: int, trick: list) -> int:
     """Returns the winner of the trick, given the trick and the trump suit.
 
     'trick_number' is 0 based.
@@ -264,13 +264,21 @@ def trick_winner(trick_number: int, trick: list, trump: Suit) -> int:
     suit_led = trick[0].suit_led
     # Searches for [trumps], then [plays which's suits match the suit led]
     for target_suit in (trump, suit_led):
-        target_plays = [
-            play for play in trick if play.card.suit == target_suit]
-        if target_plays:
-            target_plays.sort(key=lambda p: p.card.power())
-            return target_plays[-1].player
+        if not target_suit.is_nosuit():
+            target_plays = [play for play in trick if play.card.suit == target_suit]
+            if target_plays:
+                target_plays.sort(key=lambda p: p.card.power())
+                return target_plays[-1].player
 
-    raise RuntimeError(f'No winning card found in trick: {trick}')
+    # Joker played in final trick, no suit led cards, no trump cards.
+    if trick_number in (0, 9) and trick[0].card.is_joker():
+        for target_suit in reversed(Suit.iter()):  # Will follow order of Suit value
+            target_plays = [play for play in trick if play.card.suit == target_suit]
+            if target_plays:
+                target_plays.sort(key=lambda p: p.card.power())
+                return target_plays[-1].player
+
+    raise RuntimeError(f'No winning card found in trick:\n{trump=}\n{trick_number=}\n{trick=}')
 
 
 def deal_deck() -> Tuple[List[List[Card]], List[Card]]:
@@ -339,7 +347,6 @@ def is_valid_move(trick_number: int, trick: list, suit_led: Optional[Suit], trum
         else:
             return True
     else:
-        assert isinstance(suit_led, Suit)
         if play.card == trump_to_mighty(trump):
             return True
         else:
@@ -352,14 +359,18 @@ def is_valid_move(trick_number: int, trick: list, suit_led: Optional[Suit], trum
                 if play.card.is_joker():
                     return True
                 else:
-                    # i.e. if a card of the suit led is in the hand
-                    if any([c.suit == suit_led for c in hand]):
-                        if play.card.suit == suit_led:
-                            return True
-                        else:
-                            return False
-                    else:
+                    assert isinstance(suit_led, Suit)
+                    if suit_led.is_nosuit():
                         return True
+                    else:
+                        # i.e. if a card of the suit led is in the hand
+                        if any([c.suit == suit_led for c in hand]):
+                            if play.card.suit == suit_led:
+                                return True
+                            else:
+                                return False
+                        else:
+                            return True
 
 
 def legal_plays(perspective: Perspective) -> List[Play]:
@@ -371,7 +382,7 @@ def legal_plays(perspective: Perspective) -> List[Play]:
     for card in perspective.hand:
         if len(perspective.current_trick) == 0:
             if card.is_joker():
-                for specifying_suit_led in Suit.iter():
+                for specifying_suit_led in Suit.iter(True):
                     play_candidates.append(LeadingPlay(
                         perspective.player, card, specifying_suit_led))
             else:

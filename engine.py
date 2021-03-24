@@ -396,11 +396,9 @@ class GameEngine:
 
         # The trick is over
         if len(self.current_trick) == 5:
-            trick_winner = cs.trick_winner(
-                len(self.completed_tricks), self.current_trick, self.trump)
+            trick_winner = cs.trick_winner(self.trump, len(self.completed_tricks), self.current_trick)
 
-            point_cards = [
-                play.card for play in self.current_trick if play.card.is_pointcard()]
+            point_cards = [play.card for play in self.current_trick if play.card.is_pointcard()]
 
             self.point_cards[trick_winner] += point_cards
 
