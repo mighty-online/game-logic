@@ -32,11 +32,12 @@ class Play:
         self._is_leading_play = False
 
     def __repr__(self):
-        rep_str = f"[Player {self.player} plays {self.card}]"
+        rep_str = f"[ Player {self.player} plays {self.card}"
         if self.suit_led is not None:
-            rep_str += f'[{self.suit_led.short()} led]'
+            rep_str += f' | {self.suit_led.short()} led'
         if self.is_joker_call():
-            rep_str += '[JC]'
+            rep_str += ' | JC'
+        rep_str += ' ]'
         return rep_str
 
     def is_joker_call(self) -> bool:

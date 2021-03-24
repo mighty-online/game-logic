@@ -139,6 +139,8 @@ class Card:
     @staticmethod
     def str_to_vals(card_str: str) -> tuple:
         assert Card.is_cardstr(card_str)
+        if card_str == 'JK':
+            return 0, 0
 
         suit_str = card_str[0]
         rank_str = card_str[1:]
@@ -153,6 +155,8 @@ class Card:
 
     @staticmethod
     def is_cardstr(card_str: str) -> bool:
+        if card_str == 'JK':
+            return True
         if 2 <= len(card_str) <= 3:
             suit_str = card_str[0]
             rank_str = card_str[1:]
@@ -195,10 +199,10 @@ class Card:
 
     def __repr__(self):
         if self.suit.val != 0:
-            return f'[{self.suit.short()}{self.rank.short()}]'
+            return f'{self.suit.short()}{self.rank.short()}'
         else:
             assert self.rank.val == 0
-            return '[JK]'
+            return 'JK'
 
     def __eq__(self, other):
         return isinstance(other, Card) and self.suit == other.suit and self.rank == other.rank
