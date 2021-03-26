@@ -105,7 +105,7 @@ class GameEngine:
         # Game winners and losers, scoring
         self.declarer_won = None
         self.declarer_team_points = None
-        self.gamepoints_rewarded = [0] * 5
+        self.gamepoints_rewarded = [None] * 5
 
     def __repr__(self):
         return "<GameEngine object at {}>".format(self.next_calltype)
@@ -124,7 +124,8 @@ class GameEngine:
     def get_legal_plays(self) -> List[cs.Play]:
         if self.next_calltype == cs.CallType.PLAY:
             player = self.next_player
-            return cs.legal_plays(self.get_perspective(player))
+            return cs.legal_plays(player, self.hands[player], self.completed_tricks, self.current_trick,
+                                  self.suit_led, self.trump, self.next_calltype, self.leader)
         else:
             return []
 

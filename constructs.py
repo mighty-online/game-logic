@@ -142,7 +142,6 @@ class Perspective:
                  next_calltype, leader, declarer_won, declarer_team_points, gamepoints_rewarded, hand_sizes):
         if player == declarer:
             assert kitty_or_none is not None
-
         self.player = player
 
         self.hand = hand[:]
@@ -216,8 +215,7 @@ def gamepoint_rewards(declarer_team_points: int, declarer: int, friend: Optional
     if not declarer_won and declarer_team_points < 10:  # back-run
         multiplier *= 2
 
-    unit = gamepoint_transfer_unit_function(
-        declarer_won, multiplier, bid, declarer_team_points, minimum_bid)
+    unit = gamepoint_transfer_unit_function(declarer_won, multiplier, bid, declarer_team_points, minimum_bid)
 
     rewards = [0] * 5
     # First, the gamepoints are rewarded as if the declarer won.
@@ -390,28 +388,26 @@ def is_valid_move(trick_number: int, trick: list, suit_led: Optional[Suit], trum
                             return True
 
 
-def legal_plays(perspective: Perspective) -> List[Play]:
-    if perspective.player != next_player(perspective.next_calltype, perspective.current_trick, perspective.leader):
+def legal_plays(player, hand, completed_tricks, current_trick, suit_led, trump, next_calltype, leader) -> List[Play]:
+    if player != next_player(next_calltype, current_trick, leader):
         raise RuntimeError("It is not the player's turn.")
     plays = []
-    ripper = trump_to_ripper(perspective.trump)
+    ripper = trump_to_ripper(trump)
     play_candidates = []
-    for card in perspective.hand:
-        if len(perspective.current_trick) == 0:
+    for card in hand:
+        if len(current_trick) == 0:
             if card.is_joker():
                 for specifying_suit_led in Suit.iter(True):
-                    play_candidates.append(LeadingPlay(
-                        perspective.player, card, specifying_suit_led))
+                    play_candidates.append(LeadingPlay(player, card, specifying_suit_led))
             else:
-                play_candidates.append(LeadingPlay(perspective.player, card))
+                play_candidates.append(LeadingPlay(player, card))
                 if card == ripper:
-                    play_candidates.append(JokerCall(perspective.player, card))
+                    play_candidates.append(JokerCall(player, card))
         else:
-            play_candidates.append(Play(perspective.player, card))
+            play_candidates.append(Play(player, card))
 
     for play in play_candidates:
-        if is_valid_move(len(perspective.completed_tricks), perspective.current_trick, perspective.suit_led,
-                         perspective.trump, perspective.hand, play):
+        if is_valid_move(len(completed_tricks), current_trick, suit_led, trump, hand, play):
             plays.append(play)
     return plays
 
