@@ -137,7 +137,7 @@ class Perspective:
     """The Perspective class, containing all information from the perspective of a single player."""
 
     def __init__(self, player, hand, kitty_or_none, point_cards, completed_tricks, trick_winners, current_trick,
-                 previous_suit_leds, suit_led, declarer, trump, bid, friend, called_friend, friend_just_revealed,
+                 previous_suit_leds, declarer, trump, bid, friend, called_friend, friend_just_revealed,
                  mighty, ripper, hand_confirmed, next_bidder, minimum_bid, highest_bid, trump_candidate, bids,
                  next_calltype, leader, declarer_won, declarer_team_points, gamepoints_rewarded, hand_sizes):
         if player == declarer:
@@ -152,7 +152,6 @@ class Perspective:
         self.trick_winners = trick_winners[:]
         self.current_trick = deepcopy(current_trick)
         self.previous_suit_leds = deepcopy(previous_suit_leds)
-        self.suit_led = deepcopy(suit_led)
 
         self.declarer = declarer
         self.trump = deepcopy(trump)
@@ -345,7 +344,7 @@ def is_miss_deal(hand: list, mighty: Card) -> bool:
         return False
 
 
-def is_valid_move(trick_number: int, trick: list, suit_led: Optional[Suit], trump: Suit, hand: list, play) -> bool:
+def is_valid_move(trick_number: int, trick: list, trump: Suit, hand: list, play) -> bool:
     """Given information about the ongoing trick, returns whether a card is valid to be played."""
     if play.card not in hand:
         return False
@@ -374,7 +373,7 @@ def is_valid_move(trick_number: int, trick: list, suit_led: Optional[Suit], trum
                 if play.card.is_joker():
                     return True
                 else:
-                    assert isinstance(suit_led, Suit)
+                    suit_led = trick[0].suit_led
                     if suit_led.is_nosuit():
                         return True
                     else:
@@ -388,7 +387,7 @@ def is_valid_move(trick_number: int, trick: list, suit_led: Optional[Suit], trum
                             return True
 
 
-def legal_plays(player, hand, completed_tricks, current_trick, suit_led, trump, next_calltype, leader) -> List[Play]:
+def legal_plays(player, hand, completed_tricks, current_trick, trump, next_calltype, leader) -> List[Play]:
     if player != next_player(next_calltype, current_trick, leader):
         raise RuntimeError("It is not the player's turn.")
     plays = []
@@ -407,7 +406,7 @@ def legal_plays(player, hand, completed_tricks, current_trick, suit_led, trump, 
             play_candidates.append(Play(player, card))
 
     for play in play_candidates:
-        if is_valid_move(len(completed_tricks), current_trick, suit_led, trump, hand, play):
+        if is_valid_move(len(completed_tricks), current_trick, trump, hand, play):
             plays.append(play)
     return plays
 

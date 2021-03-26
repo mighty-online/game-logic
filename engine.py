@@ -70,7 +70,6 @@ class GameEngine:
         self.current_trick = []
         # necessary to prevent the suit led information of the Joker from being lost
         self.previous_suit_leds = []
-        self.suit_led = None
 
         # Setup: declarer, trump, bid, friend, friend_card
         self.declarer = None
@@ -114,7 +113,7 @@ class GameEngine:
         """Returns the perspective of the given player."""
         kitty_or_none = self.kitty if player == self.declarer else None
         return cs.Perspective(player, self.hands[player], kitty_or_none, self.point_cards, self.completed_tricks,
-                              self.trick_winners, self.current_trick, self.previous_suit_leds, self.suit_led,
+                              self.trick_winners, self.current_trick, self.previous_suit_leds,
                               self.declarer, self.trump, self.bid, self.friend, self.called_friend,
                               self.friend_just_revealed, self.mighty, self.ripper, self.hand_confirmed,
                               self.next_bidder, self.minimum_bid, self.highest_bid, self.trump_candidate, self.bids,
@@ -125,7 +124,7 @@ class GameEngine:
         if self.next_calltype == cs.CallType.PLAY:
             player = self.next_player
             return cs.legal_plays(player, self.hands[player], self.completed_tricks, self.current_trick,
-                                  self.suit_led, self.trump, self.next_calltype, self.leader)
+                                  self.trump, self.next_calltype, self.leader)
         else:
             return []
 
@@ -379,13 +378,11 @@ class GameEngine:
         if is_leader:
             if not isinstance(play.suit_led, Suit):
                 return PlayReturnType.SUIT_LED_NOT_SET
-
-            self.suit_led = play.suit_led
         else:
             if play.suit_led is not None:
                 return PlayReturnType.UNEXPECTED_SUIT_LED
 
-        if not cs.is_valid_move(len(self.completed_tricks), self.current_trick, self.suit_led, self.trump,
+        if not cs.is_valid_move(len(self.completed_tricks), self.current_trick, self.trump,
                                 self.hands[play.player], play):
             return PlayReturnType.INVALID_PLAY
 
@@ -409,9 +406,6 @@ class GameEngine:
 
             self.completed_tricks.append(self.current_trick)
             self.current_trick = []
-
-            self.previous_suit_leds.append(self.suit_led)
-            self.suit_led = None
 
             self.trick_winners.append(trick_winner)
             self.leader = trick_winner
