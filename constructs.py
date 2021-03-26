@@ -344,7 +344,7 @@ def is_miss_deal(hand: list, mighty: Card) -> bool:
         return False
 
 
-def is_valid_move(trick_number: int, trick: list, trump: Suit, hand: list, play) -> bool:
+def is_valid_move(trick_number: int, trick: list, trump: Suit, hand: list, play: Play) -> bool:
     """Given information about the ongoing trick, returns whether a card is valid to be played."""
     if play.card not in hand:
         return False
