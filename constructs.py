@@ -46,6 +46,14 @@ class Play:
     def is_leading_play(self) -> bool:
         return self._is_leading_play
 
+    def __eq__(self, other):
+        return isinstance(other, Play) and self.player == other.player and self.card == other.card and \
+               self.suit_led == other.suit_led and self._is_joker_call == other._is_joker_call and \
+               self._is_leading_play == other._is_leading_play
+
+    def __hash__(self):
+        return hash((self.player, self.card, self.suit_led, self._is_joker_call, self._is_leading_play))
+
 
 class LeadingPlay(Play):
     """The class for a leading play."""
@@ -272,7 +280,7 @@ def trick_winner(trump: Suit, trick_number: int, trick: list) -> int:
 
     # Joker played in final trick, no suit led cards, no trump cards.
     if trick_number in (0, 9) and trick[0].card.is_joker():
-        for target_suit in reversed(Suit.iter()):  # Will follow order of Suit value
+        for target_suit in reversed(list(Suit.iter())):  # Will follow order of Suit value
             target_plays = [play for play in trick if play.card.suit == target_suit]
             if target_plays:
                 target_plays.sort(key=lambda p: p.card.power())

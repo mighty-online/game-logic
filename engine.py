@@ -121,8 +121,12 @@ class GameEngine:
                               self.next_calltype, self.leader, self.declarer_won, self.declarer_team_points,
                               self.gamepoints_rewarded, [len(hand) for hand in self.hands])
 
-    def get_legal_plays(self, player: int) -> List[cs.Play]:
-        return cs.legal_plays(self.get_perspective(player))
+    def get_legal_plays(self) -> List[cs.Play]:
+        if self.next_calltype == cs.CallType.PLAY:
+            player = self.next_player
+            return cs.legal_plays(self.get_perspective(player))
+        else:
+            return []
 
     @property
     def next_player(self):
