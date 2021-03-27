@@ -137,7 +137,7 @@ class Perspective:
     """The Perspective class, containing all information from the perspective of a single player."""
 
     def __init__(self, player, hand, kitty_or_none, point_cards, completed_tricks, trick_winners, current_trick,
-                 previous_suit_leds, declarer, trump, bid, friend, called_friend, friend_just_revealed,
+                 declarer, trump, bid, friend, called_friend, friend_just_revealed,
                  mighty, ripper, hand_confirmed, next_bidder, minimum_bid, highest_bid, trump_candidate, bids,
                  next_calltype, leader, declarer_won, declarer_team_points, gamepoints_rewarded, hand_sizes):
         if player == declarer:
@@ -151,7 +151,6 @@ class Perspective:
         self.completed_tricks = deepcopy(completed_tricks)
         self.trick_winners = trick_winners[:]
         self.current_trick = deepcopy(current_trick)
-        self.previous_suit_leds = deepcopy(previous_suit_leds)
 
         self.declarer = declarer
         self.trump = deepcopy(trump)

@@ -68,8 +68,6 @@ class GameEngine:
         self.completed_tricks = []
         self.trick_winners = []
         self.current_trick = []
-        # necessary to prevent the suit led information of the Joker from being lost
-        self.previous_suit_leds = []
 
         # Setup: declarer, trump, bid, friend, friend_card
         self.declarer = None
@@ -113,7 +111,7 @@ class GameEngine:
         """Returns the perspective of the given player."""
         kitty_or_none = self.kitty if player == self.declarer else None
         return cs.Perspective(player, self.hands[player], kitty_or_none, self.point_cards, self.completed_tricks,
-                              self.trick_winners, self.current_trick, self.previous_suit_leds,
+                              self.trick_winners, self.current_trick,
                               self.declarer, self.trump, self.bid, self.friend, self.called_friend,
                               self.friend_just_revealed, self.mighty, self.ripper, self.hand_confirmed,
                               self.next_bidder, self.minimum_bid, self.highest_bid, self.trump_candidate, self.bids,
